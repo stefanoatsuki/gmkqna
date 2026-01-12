@@ -32,7 +32,8 @@ from data_loader import (
 from evaluation_storage import (
     get_evaluation_status,
     update_evaluation_status,
-    get_all_evaluator_queries
+    get_all_evaluator_queries,
+    reset_all_evaluations
 )
 
 # Page config
@@ -257,7 +258,14 @@ def screen1_evaluator_selection():
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        password = st.text_input("Enter your password:", type="password", key="password_input")
+        # Use autocomplete="off" to prevent password save prompts
+        st.markdown("""
+        <style>
+            input[type="password"] { autocomplete: off !important; }
+        </style>
+        """, unsafe_allow_html=True)
+        password = st.text_input("Enter your access code:", type="password", key="password_input", 
+                                  help="Your unique evaluator code")
         
         # Show error if login failed
         if st.session_state.login_error:
@@ -305,8 +313,15 @@ def screen_admin_dashboard():
     </div>
     """, unsafe_allow_html=True)
     
-    # Logout button
+    # Admin controls
     col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        if st.button("🔄 Reset All Progress", use_container_width=True, type="secondary"):
+            if reset_all_evaluations():
+                st.success("✅ All evaluation progress has been reset!")
+                st.rerun()
+            else:
+                st.error("Failed to reset evaluations")
     with col3:
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.is_admin = False

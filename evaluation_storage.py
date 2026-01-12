@@ -22,6 +22,17 @@ def load_evaluations() -> Dict:
     return {}
 
 
+def reset_all_evaluations():
+    """Reset all evaluation progress (admin function)."""
+    try:
+        with open(EVALUATIONS_FILE, 'w') as f:
+            json.dump({}, f)
+        return True
+    except Exception as e:
+        print(f"Error resetting evaluations: {e}")
+        return False
+
+
 def save_evaluations(evaluations: Dict):
     """Save all evaluations to JSON file."""
     try:
