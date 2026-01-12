@@ -441,7 +441,7 @@ def screen2_query_list():
     # Navigation bar
     nav_cols = st.columns([1, 1, 1, 1, 1, 1])
     with nav_cols[0]:
-        if st.button("🏠 Home", use_container_width=True, key="nav_home_list"):
+        if st.button("🚪 Sign Out", use_container_width=True, key="nav_home_list"):
             st.session_state.screen = 1
             st.session_state.selected_query = None
             st.rerun()
@@ -651,7 +651,7 @@ def render_navigation_bar(current_screen: int, model: Optional[str] = None):
     
     # Home and List buttons
     with cols[3]:
-        if st.button("Home", use_container_width=True, key="nav_home"):
+        if st.button("Sign Out", use_container_width=True, key="nav_home"):
             st.session_state.screen = 1
             st.session_state.selected_query = None
             st.rerun()
@@ -666,6 +666,22 @@ def render_navigation_bar(current_screen: int, model: Optional[str] = None):
 # ==================== SCREEN 3 & 4: Individual Model Evaluation ====================
 def screen_model_evaluation(model: str):
     """Screen 3 (Model A) or Screen 4 (Model B): Individual model evaluation."""
+    
+    # JavaScript to scroll all containers to top on page load
+    st.markdown("""
+    <script>
+        // Scroll main window to top
+        window.scrollTo(0, 0);
+        // Scroll all scrollable containers to top
+        document.querySelectorAll('[data-testid="stVerticalBlockBorderWrapper"] > div').forEach(el => {
+            el.scrollTop = 0;
+        });
+        document.querySelectorAll('div[style*="overflow"]').forEach(el => {
+            el.scrollTop = 0;
+        });
+    </script>
+    """, unsafe_allow_html=True)
+    
     if not st.session_state.selected_query:
         st.error("No query selected. Please go back and select a query.")
         if st.button("← Back to Query List"):
@@ -729,7 +745,7 @@ def screen_model_evaluation(model: str):
     
     # --- Column 1: Patient Information ---
     with col_patient:
-        patient_box = st.container(height=630, border=True)
+        patient_box = st.container(height=580, border=True)
         with patient_box:
             st.markdown("**Patient Information:**")
             if patient_summary:
@@ -739,7 +755,7 @@ def screen_model_evaluation(model: str):
     
     # --- Column 2: Model Response ---
     with col_response:
-        response_box = st.container(height=630, border=True)
+        response_box = st.container(height=580, border=True)
         with response_box:
             st.markdown(f"**Model {model} Response:**")
             if model_text:
@@ -753,7 +769,7 @@ def screen_model_evaluation(model: str):
     
     # --- Column 3: Evaluation ---
     with col_eval:
-        eval_box = st.container(height=630, border=True)
+        eval_box = st.container(height=580, border=True)
         with eval_box:
             st.markdown(f"**Model {model} Evaluation**")
             st.markdown("[Evaluation Guidelines](https://docs.google.com/document/d/1rxPNQGCzaJYDqpcFRu0a5VetWb3HL0CaJbR-kd4LNrw/edit?usp=sharing)")
@@ -919,7 +935,7 @@ def screen5_comparison():
     
     # Model A Response
     with col_a:
-        box_a = st.container(height=630, border=True)
+        box_a = st.container(height=580, border=True)
         with box_a:
             st.markdown("**Model A Response:**")
             if model_a_text:
@@ -933,7 +949,7 @@ def screen5_comparison():
     
     # Model B Response
     with col_b:
-        box_b = st.container(height=630, border=True)
+        box_b = st.container(height=580, border=True)
         with box_b:
             st.markdown("**Model B Response:**")
             if model_b_text:
@@ -950,7 +966,7 @@ def screen5_comparison():
     
     # Preference Panel
     with col_pref:
-        pref_box = st.container(height=630, border=True)
+        pref_box = st.container(height=580, border=True)
         with pref_box:
             st.markdown("**Model Preference**")
             st.markdown("[Evaluation Guidelines](https://docs.google.com/document/d/1rxPNQGCzaJYDqpcFRu0a5VetWb3HL0CaJbR-kd4LNrw/edit?usp=sharing)")
@@ -993,8 +1009,10 @@ def screen5_comparison():
                 st.session_state.pref_error = True
                 st.rerun()
             else:
-                # Clear error state and save comparison data
-                st.session_state.pref_error = False
+                # Show loading spinner while processing
+                with st.spinner("Submitting evaluation... Please wait."):
+                    # Clear error state and save comparison data
+                    st.session_state.pref_error = False
                 update_evaluation_status(
                     st.session_state.evaluator,
                     patient_id,
