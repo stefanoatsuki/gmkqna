@@ -78,7 +78,7 @@ st.markdown("""
 CSV_PATH = Path(__file__).parent / "google_sheets" / "GMK Q&A Evaluation - All Questions - gmk_qa_eval_1.csv"
 DOCX_FOLDER = Path(__file__).parent / "docx_responses"
 ASSIGNMENTS_PATH = Path(__file__).parent / "assignments.json"
-GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbx7TUvoMhBVZJc-orVnjFUWm5vH2dpwW-RwHd0UUJ9-EdSHWO1SAvH5BB0h2_JpmIN5YQ/exec"
+GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwbGGrxSRBOaMX0z6QtMA9YppLlcH80ED4sjTqA_gC2NX3UGiHD9PsP2WCJKZIYqqAH/exec"
 
 # Evaluator passwords (unique per evaluator)
 EVALUATOR_PASSWORDS = {
