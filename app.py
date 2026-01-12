@@ -667,20 +667,22 @@ def render_navigation_bar(current_screen: int, model: Optional[str] = None):
 def screen_model_evaluation(model: str):
     """Screen 3 (Model A) or Screen 4 (Model B): Individual model evaluation."""
     
-    # JavaScript to scroll all containers to top on page load
-    st.markdown("""
-    <script>
-        // Scroll main window to top
-        window.scrollTo(0, 0);
-        // Scroll all scrollable containers to top
-        document.querySelectorAll('[data-testid="stVerticalBlockBorderWrapper"] > div').forEach(el => {
-            el.scrollTop = 0;
-        });
-        document.querySelectorAll('div[style*="overflow"]').forEach(el => {
-            el.scrollTop = 0;
-        });
-    </script>
-    """, unsafe_allow_html=True)
+    # Force scroll to top using Streamlit's native approach
+    # Add anchor at top of page
+    st.markdown('<div id="top"></div>', unsafe_allow_html=True)
+    
+    # Use components.html for JavaScript execution
+    import streamlit.components.v1 as components
+    components.html("""
+        <script>
+            // Scroll main window to top
+            window.parent.document.querySelector('section.main').scrollTo(0, 0);
+            // Scroll all scrollable divs to top
+            window.parent.document.querySelectorAll('[data-testid="stVerticalBlockBorderWrapper"] > div > div').forEach(el => {
+                if (el.scrollHeight > el.clientHeight) el.scrollTop = 0;
+            });
+        </script>
+    """, height=0)
     
     if not st.session_state.selected_query:
         st.error("No query selected. Please go back and select a query.")
@@ -887,6 +889,18 @@ def screen_model_evaluation(model: str):
 # ==================== SCREEN 5: Head-to-Head Comparison ====================
 def screen5_comparison():
     """Screen 5: Head-to-head comparison of Model A vs Model B."""
+    
+    # Force scroll to top
+    import streamlit.components.v1 as components
+    components.html("""
+        <script>
+            window.parent.document.querySelector('section.main').scrollTo(0, 0);
+            window.parent.document.querySelectorAll('[data-testid="stVerticalBlockBorderWrapper"] > div > div').forEach(el => {
+                if (el.scrollHeight > el.clientHeight) el.scrollTop = 0;
+            });
+        </script>
+    """, height=0)
+    
     if not st.session_state.selected_query:
         st.error("No query selected.")
         return
