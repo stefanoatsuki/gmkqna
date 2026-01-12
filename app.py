@@ -254,7 +254,7 @@ def screen1_evaluator_selection():
         st.markdown("### Select Your Evaluator")
         
         evaluators = ["Evaluator 1", "Evaluator 2", "Evaluator 3", 
-                     "Evaluator 4", "Evaluator 5", "Evaluator 6"]
+                     "Evaluator 4", "Evaluator 5", "Evaluator 6", "Tester"]
         
         selected = st.selectbox("Choose your evaluator:", evaluators, key="eval_select")
         
