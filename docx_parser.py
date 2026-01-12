@@ -136,6 +136,28 @@ def extract_query_section_text(text_content: str, query_num: str) -> str:
     return text_content
 
 
+def convert_to_relative_query(query_num: str) -> str:
+    """
+    Convert absolute query number to relative query number (1-4).
+    
+    Each patient has 4 queries. The CSV uses absolute numbering (1-144),
+    but the DOCX files use relative numbering (1-4 per patient).
+    
+    Example:
+    - Query 25 -> Patient's 1st query -> "1"
+    - Query 26 -> Patient's 2nd query -> "2"
+    - Query 27 -> Patient's 3rd query -> "3"
+    - Query 28 -> Patient's 4th query -> "4"
+    """
+    try:
+        abs_num = int(float(query_num))
+        # Each patient has 4 queries, so: ((num - 1) % 4) + 1 = relative position
+        relative = ((abs_num - 1) % 4) + 1
+        return str(relative)
+    except (ValueError, TypeError):
+        return query_num
+
+
 def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> Tuple[Optional[str], Optional[str]]:
     """
     Find and extract Model A and Model B responses for a given patient and query.
@@ -151,13 +173,16 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
     Args:
         docx_folder: Path to folder containing model_a/ and model_b/ subfolders
         patient_id: Patient ID to match
-        query_num: Query number to match (may not be in filename)
+        query_num: Query number to match (absolute, will be converted to relative 1-4)
         
     Returns:
         Tuple of (model_a_text, model_b_text)
     """
     model_a_text = None
     model_b_text = None
+    
+    # Convert absolute query number to relative (1-4)
+    relative_query = convert_to_relative_query(query_num)
     
     if not docx_folder.exists():
         return None, None
@@ -189,7 +214,7 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
         for pattern in patterns_a:
             matches = list(model_a_folder.glob(pattern))
             if matches:
-                model_a_text = parse_docx(matches[0], query_num)
+                model_a_text = parse_docx(matches[0], relative_query)
                 break
         
         # If not found, search all files and match by patient_id
@@ -197,7 +222,7 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
             all_docx = list(model_a_folder.glob("*.docx"))
             for file in all_docx:
                 if patient_id in file.stem:
-                    model_a_text = parse_docx(file, query_num)
+                    model_a_text = parse_docx(file, relative_query)
                     break
     
     # Search in model_b folder
@@ -205,7 +230,7 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
         for pattern in patterns_b:
             matches = list(model_b_folder.glob(pattern))
             if matches:
-                model_b_text = parse_docx(matches[0], query_num)
+                model_b_text = parse_docx(matches[0], relative_query)
                 break
         
         # If not found, search all files and match by patient_id
@@ -213,7 +238,7 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
             all_docx = list(model_b_folder.glob("*.docx"))
             for file in all_docx:
                 if patient_id in file.stem:
-                    model_b_text = parse_docx(file, query_num)
+                    model_b_text = parse_docx(file, relative_query)
                     break
     
     # Fallback: search in root folder if subfolders don't exist
@@ -224,10 +249,10 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
                 stem_lower = file.stem.lower()
                 if 'model a' in stem_lower or ('model' in stem_lower and 'a' in stem_lower):
                     if not model_a_text:
-                        model_a_text = parse_docx(file, query_num)
+                        model_a_text = parse_docx(file, relative_query)
                 elif 'model b' in stem_lower or ('model' in stem_lower and 'b' in stem_lower):
                     if not model_b_text:
-                        model_b_text = parse_docx(file, query_num)
+                        model_b_text = parse_docx(file, relative_query)
     
     return model_a_text, model_b_text
 
