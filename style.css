@@ -1,5 +1,20 @@
 /* Dark Mode - Medical Evaluation Platform */
 
+/* Force scroll containers to start at top */
+[data-testid="stVerticalBlockBorderWrapper"] > div {
+    scroll-behavior: auto !important;
+}
+
+/* Animation to reset scroll on load */
+@keyframes scrollReset {
+    from { scroll-margin-top: 0; }
+    to { scroll-margin-top: 0; }
+}
+
+[data-testid="stVerticalBlockBorderWrapper"] > div > div {
+    animation: scrollReset 0.01s;
+}
+
 /* Main background - dark */
 .stApp {
     background-color: #1E1E1E;

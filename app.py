@@ -123,6 +123,10 @@ if 'login_error' not in st.session_state:
     st.session_state.login_error = False
 if 'is_admin' not in st.session_state:
     st.session_state.is_admin = False
+if 'is_submitting' not in st.session_state:
+    st.session_state.is_submitting = False
+if 'render_key' not in st.session_state:
+    st.session_state.render_key = 0
 
 
 def load_data():
@@ -667,22 +671,11 @@ def render_navigation_bar(current_screen: int, model: Optional[str] = None):
 def screen_model_evaluation(model: str):
     """Screen 3 (Model A) or Screen 4 (Model B): Individual model evaluation."""
     
-    # Force scroll to top using Streamlit's native approach
-    # Add anchor at top of page
-    st.markdown('<div id="top"></div>', unsafe_allow_html=True)
-    
-    # Use components.html for JavaScript execution
-    import streamlit.components.v1 as components
-    components.html("""
-        <script>
-            // Scroll main window to top
-            window.parent.document.querySelector('section.main').scrollTo(0, 0);
-            // Scroll all scrollable divs to top
-            window.parent.document.querySelectorAll('[data-testid="stVerticalBlockBorderWrapper"] > div > div').forEach(el => {
-                if (el.scrollHeight > el.clientHeight) el.scrollTop = 0;
-            });
-        </script>
-    """, height=0)
+    # Increment render key to force fresh container creation (resets scroll)
+    if f'last_model_{model}' not in st.session_state:
+        st.session_state[f'last_model_{model}'] = 0
+    st.session_state[f'last_model_{model}'] += 1
+    container_key = st.session_state[f'last_model_{model}']
     
     if not st.session_state.selected_query:
         st.error("No query selected. Please go back and select a query.")
@@ -890,17 +883,6 @@ def screen_model_evaluation(model: str):
 def screen5_comparison():
     """Screen 5: Head-to-head comparison of Model A vs Model B."""
     
-    # Force scroll to top
-    import streamlit.components.v1 as components
-    components.html("""
-        <script>
-            window.parent.document.querySelector('section.main').scrollTo(0, 0);
-            window.parent.document.querySelectorAll('[data-testid="stVerticalBlockBorderWrapper"] > div > div').forEach(el => {
-                if (el.scrollHeight > el.clientHeight) el.scrollTop = 0;
-            });
-        </script>
-    """, height=0)
-    
     if not st.session_state.selected_query:
         st.error("No query selected.")
         return
@@ -1023,10 +1005,11 @@ def screen5_comparison():
                 st.session_state.pref_error = True
                 st.rerun()
             else:
-                # Show loading spinner while processing
-                with st.spinner("Submitting evaluation... Please wait."):
-                    # Clear error state and save comparison data
-                    st.session_state.pref_error = False
+                # Show toast notification
+                st.toast("Submitting evaluation...", icon="⏳")
+                
+                # Clear error state and save comparison data
+                st.session_state.pref_error = False
                 update_evaluation_status(
                     st.session_state.evaluator,
                     patient_id,
