@@ -477,20 +477,23 @@ def screen2_query_list():
     
     st.markdown("---")
     
-    # Group queries by patient
+    # Group queries by base_patient_id (for proper 4-query grouping)
     patients_dict = {}
     for query_info in queries_with_status:
-        patient_id = query_info['patient_id']
-        if patient_id not in patients_dict:
-            patients_dict[patient_id] = []
-        patients_dict[patient_id].append(query_info)
+        # Use base_patient_id for grouping (handles Groups B/C where each query has unique patient_id)
+        base_patient = query_info.get('base_patient_id', query_info['patient_id'])
+        if base_patient not in patients_dict:
+            patients_dict[base_patient] = []
+        patients_dict[base_patient].append(query_info)
     
     # Sort patients by ID
     sorted_patients = sorted(patients_dict.keys())
     
     # Display each patient with their 4 questions
-    for patient_id in sorted_patients:
-        patient_queries = sorted(patients_dict[patient_id], key=lambda x: x['query_num'])
+    for base_patient in sorted_patients:
+        patient_queries = sorted(patients_dict[base_patient], key=lambda x: float(x['query_num']) if x['query_num'].replace('.','').isdigit() else 0)
+        # Use the base_patient for display
+        patient_id = base_patient
         
         # Count completion status
         completed_count = sum(1 for q in patient_queries if q['status'].get('comparison_done'))
