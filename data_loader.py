@@ -151,7 +151,8 @@ def create_assignments(df: pd.DataFrame, num_evaluators: int = 6) -> Dict:
         "Evaluator 3": "B",
         "Evaluator 4": "B",
         "Evaluator 5": "C",
-        "Evaluator 6": "C"
+        "Evaluator 6": "C",
+        "Tester": "A"  # Testers can access Group A for testing
     }
     
     for evaluator, assigned_group in evaluator_groups.items():

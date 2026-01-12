@@ -88,7 +88,8 @@ EVALUATOR_PASSWORDS = {
     "Evaluator 3": "GMK-eval-gamma-8154",
     "Evaluator 4": "GMK-eval-delta-3927",
     "Evaluator 5": "GMK-eval-epsilon-6482",
-    "Evaluator 6": "GMK-eval-zeta-1795"
+    "Evaluator 6": "GMK-eval-zeta-1795",
+    "Tester": "GMK-test-preview-2024"  # For PMs and testing - submits as "TEST"
 }
 
 # Admin password (for dashboard access)
@@ -101,7 +102,8 @@ EVALUATOR_GROUPS = {
     "Evaluator 3": "B",
     "Evaluator 4": "B",
     "Evaluator 5": "C",
-    "Evaluator 6": "C"
+    "Evaluator 6": "C",
+    "Tester": "A"  # Testers can see Group A queries for testing
 }
 
 # Initialize session state
@@ -1029,7 +1031,7 @@ def screen5_comparison():
                     # Visible fields
                     "patientSummary": query_info.get('patient_summary', ''),  # Column F
                     "fullQuery": query_info.get('full_query', ''),  # Column G
-                    "evaluator": st.session_state.evaluator,
+                    "evaluator": "TEST" if st.session_state.evaluator == "Tester" else st.session_state.evaluator,
                     # Model A - exact verbiage
                     "a_source": source_a_val,  # "No source issues (Pass)" or "Yes, at least one source (Fail)"
                     "a_source_f": model_a_data.get('source_explain', ''),
