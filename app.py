@@ -1005,8 +1005,55 @@ def screen5_comparison():
                 st.session_state.pref_error = True
                 st.rerun()
             else:
-                # Show toast notification
-                st.toast("Submitting evaluation...", icon="⏳")
+                # Show full-screen loading overlay
+                loading_html = """
+                <style>
+                    .loading-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        background-color: rgba(0, 0, 0, 0.7);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 9999;
+                    }
+                    .loading-content {
+                        background-color: #2A2A2A;
+                        padding: 40px 60px;
+                        border-radius: 16px;
+                        text-align: center;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+                    }
+                    .loading-spinner {
+                        width: 50px;
+                        height: 50px;
+                        border: 4px solid #4A4A4A;
+                        border-top: 4px solid #6A9A6A;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto 20px;
+                    }
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                    .loading-text {
+                        color: #E0E0E0;
+                        font-size: 18px;
+                        font-weight: 500;
+                    }
+                </style>
+                <div class="loading-overlay">
+                    <div class="loading-content">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">Submitting evaluation...</div>
+                    </div>
+                </div>
+                """
+                st.markdown(loading_html, unsafe_allow_html=True)
                 
                 # Clear error state and save comparison data
                 st.session_state.pref_error = False
