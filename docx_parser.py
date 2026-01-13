@@ -153,6 +153,28 @@ def normalize_query_num(query_num: str) -> str:
         return query_num
 
 
+def get_base_patient_id_for_docx(patient_id: str) -> str:
+    """
+    Get the base patient ID for DOCX file lookup.
+    
+    For Groups B/C, patient IDs have the query number as the last digit:
+    - a-8042.E-16195713 (Query 101) - this is the base, DOCX file uses this
+    - a-8042.E-16195714 (Query 102) - should look for 16195713
+    - a-8042.E-16195715 (Query 103) - should look for 16195713
+    - a-8042.E-16195716 (Query 104) - should look for 16195713
+    
+    The DOCX files are named with the FIRST patient ID in each group of 4.
+    """
+    pid = str(patient_id)
+    # For IDs that end with a digit and contain patterns like '.E-' 
+    # Strip the last digit and add '3' (first query ends in 3, 5, or varies)
+    # Actually, we need to find any file that matches the base pattern
+    if re.search(r'[.E\-]\d+$', pid):
+        # Return the ID with last digit removed - we'll search for partial matches
+        return pid[:-1]
+    return pid
+
+
 def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> Tuple[Optional[str], Optional[str]]:
     """
     Find and extract Model A and Model B responses for a given patient and query.
@@ -204,6 +226,9 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
         f"*{patient_id}*B*.docx",
     ]
     
+    # Get base patient ID for fallback search (strips last digit for Groups B/C)
+    base_patient = get_base_patient_id_for_docx(patient_id)
+    
     # Search in model_a folder
     if model_a_folder.exists():
         for pattern in patterns_a:
@@ -212,11 +237,15 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
                 model_a_text = parse_docx(matches[0], normalized_query)
                 break
         
-        # If not found, search all files and match by patient_id
+        # If not found, search all files and match by patient_id or base_patient
         if not model_a_text:
             all_docx = list(model_a_folder.glob("*.docx"))
             for file in all_docx:
+                # Try exact match first, then base patient match
                 if patient_id in file.stem:
+                    model_a_text = parse_docx(file, normalized_query)
+                    break
+                elif base_patient in file.stem:
                     model_a_text = parse_docx(file, normalized_query)
                     break
     
@@ -228,11 +257,15 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
                 model_b_text = parse_docx(matches[0], normalized_query)
                 break
         
-        # If not found, search all files and match by patient_id
+        # If not found, search all files and match by patient_id or base_patient
         if not model_b_text:
             all_docx = list(model_b_folder.glob("*.docx"))
             for file in all_docx:
+                # Try exact match first, then base patient match
                 if patient_id in file.stem:
+                    model_b_text = parse_docx(file, normalized_query)
+                    break
+                elif base_patient in file.stem:
                     model_b_text = parse_docx(file, normalized_query)
                     break
     
