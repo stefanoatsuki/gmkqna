@@ -153,26 +153,28 @@ def normalize_query_num(query_num: str) -> str:
         return query_num
 
 
-def get_base_patient_id_for_docx(patient_id: str) -> str:
+def get_base_patient_patterns(patient_id: str) -> list:
     """
-    Get the base patient ID for DOCX file lookup.
+    Get multiple patterns to search for DOCX files.
     
-    For Groups B/C, patient IDs have the query number as the last digit:
-    - a-8042.E-16195713 (Query 101) - this is the base, DOCX file uses this
-    - a-8042.E-16195714 (Query 102) - should look for 16195713
-    - a-8042.E-16195715 (Query 103) - should look for 16195713
-    - a-8042.E-16195716 (Query 104) - should look for 16195713
+    For Groups B/C, patient IDs vary in the last few digits.
+    We generate multiple search patterns to find the right file.
     
-    The DOCX files are named with the FIRST patient ID in each group of 4.
+    Example:
+    - Patient 'a-7654.E-3203720' might match file 'a-7654.E-3203718'
+    - Patient 'e--01VpybtxGbfWas5bGmzw5' might match file 'e--01VpybtxGbfWas5bGmzw3'
     """
     pid = str(patient_id)
-    # For IDs that end with a digit and contain patterns like '.E-' 
-    # Strip the last digit and add '3' (first query ends in 3, 5, or varies)
-    # Actually, we need to find any file that matches the base pattern
-    if re.search(r'[.E\-]\d+$', pid):
-        # Return the ID with last digit removed - we'll search for partial matches
-        return pid[:-1]
-    return pid
+    patterns = [pid]  # Always try exact match first
+    
+    # Try stripping last 1, 2, or 3 digits to find base pattern
+    if len(pid) > 5:
+        patterns.append(pid[:-1])  # Strip 1 digit
+        patterns.append(pid[:-2])  # Strip 2 digits
+        if len(pid) > 10:
+            patterns.append(pid[:-3])  # Strip 3 digits
+    
+    return patterns
 
 
 def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> Tuple[Optional[str], Optional[str]]:
@@ -226,8 +228,8 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
         f"*{patient_id}*B*.docx",
     ]
     
-    # Get base patient ID for fallback search (strips last digit for Groups B/C)
-    base_patient = get_base_patient_id_for_docx(patient_id)
+    # Get multiple search patterns for fallback
+    search_patterns = get_base_patient_patterns(patient_id)
     
     # Search in model_a folder
     if model_a_folder.exists():
@@ -237,16 +239,15 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
                 model_a_text = parse_docx(matches[0], normalized_query)
                 break
         
-        # If not found, search all files and match by patient_id or base_patient
+        # If not found, search all files with multiple patterns
         if not model_a_text:
             all_docx = list(model_a_folder.glob("*.docx"))
-            for file in all_docx:
-                # Try exact match first, then base patient match
-                if patient_id in file.stem:
-                    model_a_text = parse_docx(file, normalized_query)
-                    break
-                elif base_patient in file.stem:
-                    model_a_text = parse_docx(file, normalized_query)
+            for search_pat in search_patterns:
+                for file in all_docx:
+                    if search_pat in file.stem:
+                        model_a_text = parse_docx(file, normalized_query)
+                        break
+                if model_a_text:
                     break
     
     # Search in model_b folder
@@ -257,16 +258,15 @@ def find_model_responses(docx_folder: Path, patient_id: str, query_num: str) -> 
                 model_b_text = parse_docx(matches[0], normalized_query)
                 break
         
-        # If not found, search all files and match by patient_id or base_patient
+        # If not found, search all files with multiple patterns
         if not model_b_text:
             all_docx = list(model_b_folder.glob("*.docx"))
-            for file in all_docx:
-                # Try exact match first, then base patient match
-                if patient_id in file.stem:
-                    model_b_text = parse_docx(file, normalized_query)
-                    break
-                elif base_patient in file.stem:
-                    model_b_text = parse_docx(file, normalized_query)
+            for search_pat in search_patterns:
+                for file in all_docx:
+                    if search_pat in file.stem:
+                        model_b_text = parse_docx(file, normalized_query)
+                        break
+                if model_b_text:
                     break
     
     # Fallback: search in root folder if subfolders don't exist
