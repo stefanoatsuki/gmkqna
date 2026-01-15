@@ -108,11 +108,12 @@ def rebuild_progress_from_submissions(submitted_data: list):
     Rebuild evaluation progress from submitted data (e.g., from Google Sheets export).
     
     Args:
-        submitted_data: List of dicts with keys: evaluator, patientId, queryNum
+        submitted_data: List of dicts with keys: evaluator, patientId, queryNum, and all
+                        evaluation data (model_a_data, model_b_data, comparison_data)
                         (matching what was submitted to Google Sheets)
     
-    This marks queries as completed if they were submitted to Google Sheets.
-    Useful for recovering progress after Streamlit Cloud file system reset.
+    This fully restores evaluation data including all scores, explanations, and preferences
+    from Google Sheets. Useful for recovering progress after Streamlit Cloud file system reset.
     """
     evaluations = load_evaluations()
     created_keys = []
@@ -137,23 +138,64 @@ def rebuild_progress_from_submissions(submitted_data: list):
             key = f"{evaluator}_{patient_id}_{query_num}"
             created_keys.append(key)
             
+            # Restore Model A evaluation data
+            model_a_data = {
+                'source_yes_no': submission.get('a_source', ''),
+                'source_explain': submission.get('a_source_f', ''),
+                'hallucination_yes_no': submission.get('a_hallucination', ''),
+                'hallucination_explain': submission.get('a_hall_f', ''),
+                'safety_yes_no': submission.get('a_safety', ''),
+                'safety_explain': submission.get('a_safety_f', ''),
+                'content_yes_no': submission.get('a_completeness', ''),
+                'content_explain': submission.get('a_comp_f', ''),
+                'extraneous_yes_no': submission.get('a_extraneous', ''),
+                'extraneous_explain': submission.get('a_extra_f', ''),
+                'flow_yes_no': submission.get('a_flow', ''),
+                'flow_explain': submission.get('a_flow_f', '')
+            }
+            
+            # Restore Model B evaluation data
+            model_b_data = {
+                'source_yes_no': submission.get('b_source', ''),
+                'source_explain': submission.get('b_source_f', ''),
+                'hallucination_yes_no': submission.get('b_hallucination', ''),
+                'hallucination_explain': submission.get('b_hall_f', ''),
+                'safety_yes_no': submission.get('b_safety', ''),
+                'safety_explain': submission.get('b_safety_f', ''),
+                'content_yes_no': submission.get('b_completeness', ''),
+                'content_explain': submission.get('b_comp_f', ''),
+                'extraneous_yes_no': submission.get('b_extraneous', ''),
+                'extraneous_explain': submission.get('b_extra_f', ''),
+                'flow_yes_no': submission.get('b_flow', ''),
+                'flow_explain': submission.get('b_flow_f', '')
+            }
+            
+            # Restore comparison data
+            comparison_data = {
+                'preference': submission.get('preference', ''),
+                'preference_reasons': submission.get('pref_reasons', '')
+            }
+            
             if key not in evaluations:
                 evaluations[key] = {
                     'started': True,
                     'model_a_graded': True,
                     'model_b_graded': True,
                     'comparison_done': True,
-                    'model_a_data': {},
-                    'model_b_data': {},
-                    'comparison_data': {}
+                    'model_a_data': model_a_data,
+                    'model_b_data': model_b_data,
+                    'comparison_data': comparison_data
                 }
             else:
-                # Update to mark as completed
+                # Update with restored data (overwrite to ensure we have the latest)
                 evaluations[key].update({
                     'started': True,
                     'model_a_graded': True,
                     'model_b_graded': True,
-                    'comparison_done': True
+                    'comparison_done': True,
+                    'model_a_data': model_a_data,
+                    'model_b_data': model_b_data,
+                    'comparison_data': comparison_data
                 })
     
     save_evaluations(evaluations)
