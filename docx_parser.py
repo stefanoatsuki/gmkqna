@@ -12,8 +12,12 @@ try:
     MAMMOTH_AVAILABLE = True
 except ImportError:
     MAMMOTH_AVAILABLE = False
-    print("Warning: mammoth not installed. Install with: pip install mammoth")
-    from docx import Document
+    try:
+        from docx import Document
+        DOCX_AVAILABLE = True
+    except ImportError:
+        DOCX_AVAILABLE = False
+        Document = None  # Will be checked before use
 
 
 def parse_docx(file_path: Path, query_num: Optional[str] = None) -> str:
@@ -43,6 +47,8 @@ def parse_docx(file_path: Path, query_num: Optional[str] = None) -> str:
                 return html_content
         else:
             # Fallback to plain text extraction if mammoth is not available
+            if not DOCX_AVAILABLE or Document is None:
+                return f"Error: Neither mammoth nor python-docx is installed. Cannot parse {file_path}"
             doc = Document(file_path)
             paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
             full_text = "\n\n".join(paragraphs)
@@ -73,7 +79,11 @@ def extract_query_section(html_content: str, query_num: str) -> str:
     
     # Normalize query_num: remove ".0" suffix if present (e.g., "123.0" -> "123")
     # This handles query numbers stored as floats in assignments
-    normalized_query_num = str(query_num).rstrip('0').rstrip('.') if '.' in str(query_num) else str(query_num)
+    query_num_str = str(query_num)
+    if query_num_str.endswith('.0'):
+        normalized_query_num = query_num_str[:-2]  # Remove ".0" suffix
+    else:
+        normalized_query_num = query_num_str
     
     # Pattern to match "Query X" where X is the query number
     # Handle variations: "Query 1", "Query1", "Query  1", etc.
@@ -123,7 +133,11 @@ def extract_query_section_text(text_content: str, query_num: str) -> str:
     import re
     
     # Normalize query_num: remove ".0" suffix if present (e.g., "123.0" -> "123")
-    normalized_query_num = str(query_num).rstrip('0').rstrip('.') if '.' in str(query_num) else str(query_num)
+    query_num_str = str(query_num)
+    if query_num_str.endswith('.0'):
+        normalized_query_num = query_num_str[:-2]  # Remove ".0" suffix
+    else:
+        normalized_query_num = query_num_str
     
     # Split by query markers
     parts = re.split(r'(Query\s+\d+)', text_content, flags=re.IGNORECASE)
