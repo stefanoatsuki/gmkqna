@@ -15,39 +15,21 @@ import urllib3
 from pathlib import Path
 from typing import Optional, Dict
 import sys
+import os
 
 # Disable SSL warnings for sandboxed environments
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Import local modules - using standard imports (should work on Streamlit Cloud)
+# Add current directory to Python path for reliable imports on Streamlit Cloud
+app_dir = Path(__file__).parent
+if str(app_dir) not in sys.path:
+    sys.path.insert(0, str(app_dir))
+
+# Import local modules
 try:
-    from docx_parser import find_model_responses
-    from data_loader import (
-        load_evaluation_metadata,
-        load_assignments,
-        save_assignments,
-        create_assignments
-    )
-    from evaluation_storage import (
-        get_evaluation_status,
-        update_evaluation_status,
-        get_all_evaluator_queries,
-        reset_all_evaluations
-    )
-except ImportError:
-    # Fallback for Streamlit Cloud if standard imports fail
-    import importlib.util
-    app_dir = Path(__file__).parent
-    
-    def import_module_from_file(module_name, file_path):
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
-    
-    docx_parser = import_module_from_file("docx_parser", app_dir / "docx_parser.py")
-    data_loader = import_module_from_file("data_loader", app_dir / "data_loader.py")
-    evaluation_storage = import_module_from_file("evaluation_storage", app_dir / "evaluation_storage.py")
+    import docx_parser
+    import data_loader
+    import evaluation_storage
     
     find_model_responses = docx_parser.find_model_responses
     load_evaluation_metadata = data_loader.load_evaluation_metadata
@@ -58,6 +40,17 @@ except ImportError:
     update_evaluation_status = evaluation_storage.update_evaluation_status
     get_all_evaluator_queries = evaluation_storage.get_all_evaluator_queries
     reset_all_evaluations = evaluation_storage.reset_all_evaluations
+except ImportError as e:
+    st.error(f"❌ Import Error: Could not import required modules. Error: {str(e)}")
+    st.info(f"📁 Current directory: {os.getcwd()}")
+    st.info(f"📁 App directory: {app_dir}")
+    st.info(f"📁 Python path: {sys.path[:3]}")
+    st.stop()
+except Exception as e:
+    st.error(f"❌ Unexpected Error importing modules: {type(e).__name__}: {str(e)}")
+    import traceback
+    st.code(traceback.format_exc())
+    st.stop()
 
 # Page config
 st.set_page_config(
