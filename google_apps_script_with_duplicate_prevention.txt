@@ -163,8 +163,16 @@ function doGet(e) {
     for (let i = 0; i < data.length; i++) {
       const preference = String(data[i][47] || '').trim(); // Column AV (48) = index 47
       
-      // Only include rows where Model Preference is filled (completed submissions)
-      if (preference) {
+      // Check if there's ANY evaluation data (Model A or Model B scores)
+      const hasModelAData = String(data[i][9] || '').trim() || String(data[i][11] || '').trim() || 
+                            String(data[i][13] || '').trim() || String(data[i][15] || '').trim() ||
+                            String(data[i][17] || '').trim() || String(data[i][19] || '').trim();
+      const hasModelBData = String(data[i][29] || '').trim() || String(data[i][31] || '').trim() || 
+                            String(data[i][33] || '').trim() || String(data[i][35] || '').trim() ||
+                            String(data[i][37] || '').trim() || String(data[i][39] || '').trim();
+      
+      // Include rows that have ANY evaluation data (Model A, Model B, or preference)
+      if (preference || hasModelAData || hasModelBData) {
         submissions.push({
           // Basic info
           patientId: String(data[i][0] || '').trim(),      // Column A (1) = index 0
