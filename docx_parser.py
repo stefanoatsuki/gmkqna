@@ -64,16 +64,20 @@ def extract_query_section(html_content: str, query_num: str) -> str:
     
     Args:
         html_content: Full HTML content
-        query_num: Query number to extract (e.g., "1", "2")
+        query_num: Query number to extract (e.g., "1", "2", "123.0" -> normalized to "123")
         
     Returns:
         HTML content for the specific query only
     """
     import re
     
+    # Normalize query_num: remove ".0" suffix if present (e.g., "123.0" -> "123")
+    # This handles query numbers stored as floats in assignments
+    normalized_query_num = str(query_num).rstrip('0').rstrip('.') if '.' in str(query_num) else str(query_num)
+    
     # Pattern to match "Query X" where X is the query number
     # Handle variations: "Query 1", "Query1", "Query  1", etc.
-    pattern = rf'(?:<[^>]*>)?\s*Query\s+{query_num}\s*(?:</[^>]*>)?'
+    pattern = rf'(?:<[^>]*>)?\s*Query\s+{normalized_query_num}\s*(?:</[^>]*>)?'
     
     # Find all query markers
     query_markers = list(re.finditer(r'Query\s+(\d+)', html_content, re.IGNORECASE))
@@ -85,7 +89,7 @@ def extract_query_section(html_content: str, query_num: str) -> str:
     # Find the target query
     target_query_idx = None
     for idx, match in enumerate(query_markers):
-        if match.group(1) == query_num:
+        if match.group(1) == normalized_query_num:
             target_query_idx = idx
             break
     
@@ -111,18 +115,21 @@ def extract_query_section_text(text_content: str, query_num: str) -> str:
     
     Args:
         text_content: Full text content
-        query_num: Query number to extract (e.g., "1", "2")
+        query_num: Query number to extract (e.g., "1", "2", "123.0" -> normalized to "123")
         
     Returns:
         Text content for the specific query only
     """
     import re
     
+    # Normalize query_num: remove ".0" suffix if present (e.g., "123.0" -> "123")
+    normalized_query_num = str(query_num).rstrip('0').rstrip('.') if '.' in str(query_num) else str(query_num)
+    
     # Split by query markers
     parts = re.split(r'(Query\s+\d+)', text_content, flags=re.IGNORECASE)
     
     # Find the target query section
-    target_query = f"Query {query_num}"
+    target_query = f"Query {normalized_query_num}"
     for i, part in enumerate(parts):
         if part.strip().lower() == target_query.lower():
             # Found the query marker, return content until next query or end
