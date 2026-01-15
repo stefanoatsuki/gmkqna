@@ -102,7 +102,7 @@ st.markdown("""
 CSV_PATH = Path(__file__).parent / "google_sheets" / "GMK Q&A Evaluation - All Questions - gmk_qa_eval_1.csv"
 DOCX_FOLDER = Path(__file__).parent / "docx_responses"
 ASSIGNMENTS_PATH = Path(__file__).parent / "assignments.json"
-GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzXyEWTWih9AynCvFwdeuar8E_NGU5-5Dukxv_NA5qdBI8BOaEw-VA1ai9dWq3naNzqCg/exec"
+GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwa2t6vySj_G4Bu_ZOh46IY4lJKIgiSEp7ImNWlTMuR6yDN6ebF84eOPvjo_LiFCWMS/exec"
 # GET endpoint for reading submitted evaluations (for progress recovery)
 # Same URL - Google Apps Script handles both GET and POST based on HTTP method
 GOOGLE_SHEETS_GET_URL = GOOGLE_SHEETS_URL  # Same URL, different HTTP method
