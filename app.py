@@ -326,6 +326,75 @@ def screen_admin_dashboard():
     (started/completed status) are affected. Evaluators can continue where they left off.
     """)
     
+    # Recovery section
+    with st.expander("🔧 Recover Progress from Google Sheets", expanded=False):
+        st.markdown("""
+        **If progress was lost after app restart:**
+        1. Export your Google Sheet (File → Download → CSV)
+        2. Upload the CSV below to rebuild progress tracking
+        """)
+        
+        uploaded_file = st.file_uploader("Upload Google Sheets CSV export", type=['csv'], key="recovery_csv")
+        
+        if uploaded_file is not None:
+            try:
+                import io
+                import pandas as pd
+                from evaluation_storage import rebuild_progress_from_submissions
+                
+                # Read CSV
+                df = pd.read_csv(io.StringIO(uploaded_file.read().decode('utf-8')))
+                
+                # Find columns
+                patient_col = None
+                query_col = None
+                evaluator_col = None
+                
+                for col in df.columns:
+                    col_lower = str(col).lower()
+                    if 'patient' in col_lower and 'id' in col_lower:
+                        patient_col = col
+                    elif col_lower == 'query' or col_lower.startswith('query'):
+                        query_col = col
+                    elif 'evaluator' in col_lower:
+                        evaluator_col = col
+                
+                if not patient_col:
+                    patient_col = df.columns[0] if len(df.columns) > 0 else None
+                if not query_col:
+                    query_col = df.columns[1] if len(df.columns) > 1 else None
+                if not evaluator_col:
+                    evaluator_col = df.columns[50] if len(df.columns) > 50 else None
+                
+                # Extract submissions
+                submissions = []
+                for idx, row in df.iterrows():
+                    try:
+                        patient_id = str(row[patient_col]).strip() if patient_col else ""
+                        query_num = str(row[query_col]).strip() if query_col else ""
+                        evaluator = str(row[evaluator_col]).strip() if evaluator_col else ""
+                        
+                        if (patient_id and patient_id != 'nan' and 
+                            query_num and query_num != 'nan' and 
+                            evaluator and evaluator != 'nan' and 
+                            evaluator not in ['', 'Evaluator #', 'Evaluator']):
+                            submissions.append({
+                                'evaluator': evaluator,
+                                'patientId': patient_id,
+                                'queryNum': query_num
+                            })
+                    except:
+                        continue
+                
+                if submissions:
+                    count = rebuild_progress_from_submissions(submissions)
+                    st.success(f"✅ Recovered progress for {count} submissions! The app will refresh...")
+                    st.rerun()
+                else:
+                    st.error("❌ No valid submissions found. Please check your CSV format.")
+            except Exception as e:
+                st.error(f"❌ Error processing CSV: {e}")
+    
     # Admin controls
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
