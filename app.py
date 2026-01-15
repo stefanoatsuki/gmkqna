@@ -141,6 +141,68 @@ def load_data():
             save_assignments(assignments, ASSIGNMENTS_PATH)
         
         st.session_state.assignments = assignments
+        
+        # Auto-recover progress if evaluations.json is empty but we have submissions
+        # This prevents progress loss after app restarts
+        from evaluation_storage import load_evaluations, rebuild_progress_from_submissions
+        evaluations = load_evaluations()
+        
+        # Check if progress is empty but we should have data
+        if not evaluations and 'auto_recovery_attempted' not in st.session_state:
+            st.session_state.auto_recovery_attempted = True
+            # Try to recover from a cached submissions CSV if it exists
+            recovery_csv = Path("submissions_export.csv")
+            if recovery_csv.exists():
+                try:
+                    import pandas as pd
+                    df = pd.read_csv(recovery_csv)
+                    
+                    # Find columns
+                    patient_col = None
+                    query_col = None
+                    evaluator_col = None
+                    
+                    for col in df.columns:
+                        col_lower = str(col).lower()
+                        if 'patient' in col_lower and 'id' in col_lower:
+                            patient_col = col
+                        elif col_lower == 'query' or col_lower.startswith('query'):
+                            query_col = col
+                        elif 'evaluator' in col_lower:
+                            evaluator_col = col
+                    
+                    if not patient_col:
+                        patient_col = df.columns[0] if len(df.columns) > 0 else None
+                    if not query_col:
+                        query_col = df.columns[1] if len(df.columns) > 1 else None
+                    if not evaluator_col:
+                        evaluator_col = df.columns[50] if len(df.columns) > 50 else None
+                    
+                    # Extract submissions
+                    submissions = []
+                    for idx, row in df.iterrows():
+                        try:
+                            patient_id = str(row[patient_col]).strip() if patient_col else ""
+                            query_num = str(row[query_col]).strip() if query_col else ""
+                            evaluator = str(row[evaluator_col]).strip() if evaluator_col else ""
+                            
+                            if (patient_id and patient_id != 'nan' and 
+                                query_num and query_num != 'nan' and 
+                                evaluator and evaluator != 'nan' and 
+                                evaluator not in ['', 'Evaluator #', 'Evaluator']):
+                                submissions.append({
+                                    'evaluator': evaluator,
+                                    'patientId': patient_id,
+                                    'queryNum': query_num
+                                })
+                        except:
+                            continue
+                    
+                    if submissions:
+                        rebuild_progress_from_submissions(submissions)
+                        # Don't show message - silent recovery
+                except Exception as e:
+                    pass  # Silent fail - recovery CSV might be outdated
     else:
         st.error(f"CSV file not found: {CSV_PATH}")
 
