@@ -12,19 +12,26 @@ Streamlit Cloud uses an **ephemeral filesystem** - files stored locally can be w
 
 ## Prevention Strategies
 
-### ✅ Best: Use Admin Dashboard Recovery
+### ✅ **AUTOMATIC Recovery (Recommended)**
+The app now automatically recovers progress from Google Sheets on startup!
+
+**Setup (one-time):**
+1. Add the `doGet()` function to your Google Apps Script (see `google_apps_script_get_endpoint.txt`)
+2. Deploy it as a web app with "Execute as: Me" and "Who has access: Anyone"
+3. That's it! Progress will auto-recover on every app restart
+
+**How it works:**
+- On startup, if `evaluations.json` is empty, the app calls Google Sheets
+- Retrieves all submitted evaluations
+- Automatically rebuilds progress tracking
+- **No manual intervention needed!**
+
+### ✅ Manual Recovery (Backup Method)
+If automatic recovery isn't set up yet:
 1. Export Google Sheet as CSV (File → Download → CSV)
 2. Go to Admin Dashboard → "🔧 Recover Progress from Google Sheets"
 3. Upload the CSV
 4. Progress is instantly restored
-
-### ✅ Alternative: Keep CSV Export Handy
-- Export your Google Sheet periodically
-- Save as `submissions_export.csv` in the app folder
-- The app will auto-recover on startup if this file exists
-
-### ✅ Long-term: Store Progress in Google Sheets
-For future versions, we can add a "Status" column to Google Sheets that tracks completion, making progress permanent.
 
 ## Recovery Steps
 

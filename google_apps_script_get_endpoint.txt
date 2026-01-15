@@ -1,0 +1,54 @@
+// ADD THIS TO YOUR GOOGLE APPS SCRIPT
+// This creates a GET endpoint to retrieve submitted evaluations
+
+function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("gmk_qa_eval");
+    if (!sheet) sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    
+    // Find column indices
+    var patientCol = headers.indexOf("Patient ID");
+    var queryCol = headers.indexOf("Query");
+    var evaluatorCol = headers.indexOf("Evaluator #");
+    var prefCol = headers.indexOf("Model Preference");
+    
+    // If column names don't match, use indices (A=0, B=1, AX=50)
+    if (patientCol === -1) patientCol = 0;
+    if (queryCol === -1) queryCol = 1;
+    if (evaluatorCol === -1) evaluatorCol = 50;
+    if (prefCol === -1) prefCol = 47; // Column AV
+    
+    var submissions = [];
+    
+    // Skip header row, process all rows
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var patientId = row[patientCol];
+      var queryNum = row[queryCol];
+      var evaluator = row[evaluatorCol];
+      var preference = row[prefCol];
+      
+      // Only include rows with completed evaluations (Model Preference filled)
+      if (patientId && queryNum && evaluator && preference) {
+        submissions.push({
+          patientId: String(patientId),
+          queryNum: String(queryNum),
+          evaluator: String(evaluator)
+        });
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(submissions))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// KEEP YOUR EXISTING doPost FUNCTION - this is just an addition
+
