@@ -177,7 +177,7 @@ def rebuild_progress_from_submissions(submitted_data: list):
             }
             
             # Determine what's been completed based on what data exists
-            # Check if Model A has any scores (at least one metric filled)
+            # Check if Model A has any scores OR comments (at least one metric filled)
             has_model_a_scores = any([
                 submission.get('a_source', '').strip(),
                 submission.get('a_hallucination', '').strip(),
@@ -186,8 +186,17 @@ def rebuild_progress_from_submissions(submitted_data: list):
                 submission.get('a_extraneous', '').strip(),
                 submission.get('a_flow', '').strip()
             ])
+            has_model_a_comments = any([
+                submission.get('a_source_f', '').strip(),
+                submission.get('a_hall_f', '').strip(),
+                submission.get('a_safety_f', '').strip(),
+                submission.get('a_comp_f', '').strip(),
+                submission.get('a_extra_f', '').strip(),
+                submission.get('a_flow_f', '').strip()
+            ])
+            has_model_a_data = has_model_a_scores or has_model_a_comments
             
-            # Check if Model B has any scores (at least one metric filled)
+            # Check if Model B has any scores OR comments (at least one metric filled)
             has_model_b_scores = any([
                 submission.get('b_source', '').strip(),
                 submission.get('b_hallucination', '').strip(),
@@ -196,21 +205,30 @@ def rebuild_progress_from_submissions(submitted_data: list):
                 submission.get('b_extraneous', '').strip(),
                 submission.get('b_flow', '').strip()
             ])
+            has_model_b_comments = any([
+                submission.get('b_source_f', '').strip(),
+                submission.get('b_hall_f', '').strip(),
+                submission.get('b_safety_f', '').strip(),
+                submission.get('b_comp_f', '').strip(),
+                submission.get('b_extra_f', '').strip(),
+                submission.get('b_flow_f', '').strip()
+            ])
+            has_model_b_data = has_model_b_scores or has_model_b_comments
             
             # Check if comparison is done (preference is filled)
             has_preference = bool(submission.get('preference', '').strip())
             
             # Determine if anything has been started
-            has_any_data = has_model_a_scores or has_model_b_scores or has_preference
+            has_any_data = has_model_a_data or has_model_b_data or has_preference
             
             if key not in evaluations:
                 evaluations[key] = {
                     'started': has_any_data,
-                    'model_a_graded': has_model_a_scores,
-                    'model_b_graded': has_model_b_scores,
+                    'model_a_graded': has_model_a_scores,  # Only mark as graded if scores exist
+                    'model_b_graded': has_model_b_scores,  # Only mark as graded if scores exist
                     'comparison_done': has_preference,
-                    'model_a_data': model_a_data if has_model_a_scores else {},
-                    'model_b_data': model_b_data if has_model_b_scores else {},
+                    'model_a_data': model_a_data if has_model_a_data else {},
+                    'model_b_data': model_b_data if has_model_b_data else {},
                     'comparison_data': comparison_data if has_preference else {}
                 }
             else:
@@ -223,10 +241,10 @@ def rebuild_progress_from_submissions(submitted_data: list):
                     'model_b_graded': has_model_b_scores or existing.get('model_b_graded', False),
                     'comparison_done': has_preference or existing.get('comparison_done', False)
                 })
-                # Only update data if we have it from Google Sheets
-                if has_model_a_scores:
+                # Only update data if we have it from Google Sheets (including comments)
+                if has_model_a_data:
                     evaluations[key]['model_a_data'] = model_a_data
-                if has_model_b_scores:
+                if has_model_b_data:
                     evaluations[key]['model_b_data'] = model_b_data
                 if has_preference:
                     evaluations[key]['comparison_data'] = comparison_data
