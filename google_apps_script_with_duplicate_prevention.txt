@@ -163,13 +163,19 @@ function doGet(e) {
     for (let i = 0; i < data.length; i++) {
       const preference = String(data[i][47] || '').trim(); // Column AV (48) = index 47
       
-      // Check if there's ANY evaluation data (Model A or Model B scores)
+      // Check if there's ANY evaluation data (Model A or B scores OR comments)
       const hasModelAData = String(data[i][9] || '').trim() || String(data[i][11] || '').trim() || 
                             String(data[i][13] || '').trim() || String(data[i][15] || '').trim() ||
-                            String(data[i][17] || '').trim() || String(data[i][19] || '').trim();
+                            String(data[i][17] || '').trim() || String(data[i][19] || '').trim() ||
+                            String(data[i][10] || '').trim() || String(data[i][12] || '').trim() ||
+                            String(data[i][14] || '').trim() || String(data[i][16] || '').trim() ||
+                            String(data[i][18] || '').trim() || String(data[i][20] || '').trim();
       const hasModelBData = String(data[i][29] || '').trim() || String(data[i][31] || '').trim() || 
                             String(data[i][33] || '').trim() || String(data[i][35] || '').trim() ||
-                            String(data[i][37] || '').trim() || String(data[i][39] || '').trim();
+                            String(data[i][37] || '').trim() || String(data[i][39] || '').trim() ||
+                            String(data[i][30] || '').trim() || String(data[i][32] || '').trim() ||
+                            String(data[i][34] || '').trim() || String(data[i][36] || '').trim() ||
+                            String(data[i][38] || '').trim() || String(data[i][40] || '').trim();
       
       // Include rows that have ANY evaluation data (Model A, Model B, or preference)
       if (preference || hasModelAData || hasModelBData) {
@@ -180,36 +186,38 @@ function doGet(e) {
           evaluator: String(data[i][49] || '').trim(),     // Column AX (50) = index 49
           
           // Model A data
+          // Scores: trim to normalize
+          // Comments: preserve as-is (don't trim) to keep all content
           a_source: String(data[i][9] || '').trim(),        // Column J (10) = index 9
-          a_source_f: String(data[i][10] || '').trim(),     // Column K (11) = index 10
+          a_source_f: String(data[i][10] || ''),           // Column K (11) = index 10 - PRESERVE AS-IS
           a_hallucination: String(data[i][11] || '').trim(), // Column L (12) = index 11
-          a_hall_f: String(data[i][12] || '').trim(),       // Column M (13) = index 12
+          a_hall_f: String(data[i][12] || ''),            // Column M (13) = index 12 - PRESERVE AS-IS
           a_safety: String(data[i][13] || '').trim(),      // Column N (14) = index 13
-          a_safety_f: String(data[i][14] || '').trim(),    // Column O (15) = index 14
+          a_safety_f: String(data[i][14] || ''),           // Column O (15) = index 14 - PRESERVE AS-IS
           a_completeness: String(data[i][15] || '').trim(), // Column P (16) = index 15
-          a_comp_f: String(data[i][16] || '').trim(),       // Column Q (17) = index 16
+          a_comp_f: String(data[i][16] || ''),            // Column Q (17) = index 16 - PRESERVE AS-IS
           a_extraneous: String(data[i][17] || '').trim(),  // Column R (18) = index 17
-          a_extra_f: String(data[i][18] || '').trim(),      // Column S (19) = index 18
-          a_flow: String(data[i][19] || '').trim(),        // Column T (20) = index 19
-          a_flow_f: String(data[i][20] || '').trim(),      // Column U (21) = index 20
+          a_extra_f: String(data[i][18] || ''),           // Column S (19) = index 18 - PRESERVE AS-IS
+          a_flow: String(data[i][19] || '').trim(),       // Column T (20) = index 19
+          a_flow_f: String(data[i][20] || ''),             // Column U (21) = index 20 - PRESERVE AS-IS
           
           // Model B data
           b_source: String(data[i][29] || '').trim(),       // Column AD (30) = index 29
-          b_source_f: String(data[i][30] || '').trim(),    // Column AE (31) = index 30
+          b_source_f: String(data[i][30] || ''),          // Column AE (31) = index 30 - PRESERVE AS-IS
           b_hallucination: String(data[i][31] || '').trim(), // Column AF (32) = index 31
-          b_hall_f: String(data[i][32] || '').trim(),      // Column AG (33) = index 32
+          b_hall_f: String(data[i][32] || ''),            // Column AG (33) = index 32 - PRESERVE AS-IS
           b_safety: String(data[i][33] || '').trim(),      // Column AH (34) = index 33
-          b_safety_f: String(data[i][34] || '').trim(),    // Column AI (35) = index 34
+          b_safety_f: String(data[i][34] || ''),          // Column AI (35) = index 34 - PRESERVE AS-IS
           b_completeness: String(data[i][35] || '').trim(),  // Column AJ (36) = index 35
-          b_comp_f: String(data[i][36] || '').trim(),      // Column AK (37) = index 36
+          b_comp_f: String(data[i][36] || ''),            // Column AK (37) = index 36 - PRESERVE AS-IS
           b_extraneous: String(data[i][37] || '').trim(),  // Column AL (38) = index 37
-          b_extra_f: String(data[i][38] || '').trim(),      // Column AM (39) = index 38
-          b_flow: String(data[i][39] || '').trim(),        // Column AN (40) = index 39
-          b_flow_f: String(data[i][40] || '').trim(),      // Column AO (41) = index 40
+          b_extra_f: String(data[i][38] || ''),           // Column AM (39) = index 38 - PRESERVE AS-IS
+          b_flow: String(data[i][39] || '').trim(),       // Column AN (40) = index 39
+          b_flow_f: String(data[i][40] || ''),            // Column AO (41) = index 40 - PRESERVE AS-IS
           
           // Comparison data
           preference: preference,
-          pref_reasons: String(data[i][48] || '').trim()   // Column AW (49) = index 48
+          pref_reasons: String(data[i][48] || '')         // Column AW (49) = index 48 - PRESERVE AS-IS
         });
       }
     }

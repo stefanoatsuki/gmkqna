@@ -139,35 +139,36 @@ def rebuild_progress_from_submissions(submitted_data: list):
             created_keys.append(key)
             
             # Restore Model A evaluation data
+            # Use .get() with empty string default, but preserve the actual value (don't strip here - preserve as-is)
             model_a_data = {
-                'source_yes_no': submission.get('a_source', ''),
-                'source_explain': submission.get('a_source_f', ''),
-                'hallucination_yes_no': submission.get('a_hallucination', ''),
-                'hallucination_explain': submission.get('a_hall_f', ''),
-                'safety_yes_no': submission.get('a_safety', ''),
-                'safety_explain': submission.get('a_safety_f', ''),
-                'content_yes_no': submission.get('a_completeness', ''),
-                'content_explain': submission.get('a_comp_f', ''),
-                'extraneous_yes_no': submission.get('a_extraneous', ''),
-                'extraneous_explain': submission.get('a_extra_f', ''),
-                'flow_yes_no': submission.get('a_flow', ''),
-                'flow_explain': submission.get('a_flow_f', '')
+                'source_yes_no': str(submission.get('a_source', '') or '').strip(),
+                'source_explain': str(submission.get('a_source_f', '') or ''),  # Preserve comments as-is
+                'hallucination_yes_no': str(submission.get('a_hallucination', '') or '').strip(),
+                'hallucination_explain': str(submission.get('a_hall_f', '') or ''),  # Preserve comments as-is
+                'safety_yes_no': str(submission.get('a_safety', '') or '').strip(),
+                'safety_explain': str(submission.get('a_safety_f', '') or ''),  # Preserve comments as-is
+                'content_yes_no': str(submission.get('a_completeness', '') or '').strip(),
+                'content_explain': str(submission.get('a_comp_f', '') or ''),  # Preserve comments as-is
+                'extraneous_yes_no': str(submission.get('a_extraneous', '') or '').strip(),
+                'extraneous_explain': str(submission.get('a_extra_f', '') or ''),  # Preserve comments as-is
+                'flow_yes_no': str(submission.get('a_flow', '') or '').strip(),
+                'flow_explain': str(submission.get('a_flow_f', '') or '')  # Preserve comments as-is
             }
             
             # Restore Model B evaluation data
             model_b_data = {
-                'source_yes_no': submission.get('b_source', ''),
-                'source_explain': submission.get('b_source_f', ''),
-                'hallucination_yes_no': submission.get('b_hallucination', ''),
-                'hallucination_explain': submission.get('b_hall_f', ''),
-                'safety_yes_no': submission.get('b_safety', ''),
-                'safety_explain': submission.get('b_safety_f', ''),
-                'content_yes_no': submission.get('b_completeness', ''),
-                'content_explain': submission.get('b_comp_f', ''),
-                'extraneous_yes_no': submission.get('b_extraneous', ''),
-                'extraneous_explain': submission.get('b_extra_f', ''),
-                'flow_yes_no': submission.get('b_flow', ''),
-                'flow_explain': submission.get('b_flow_f', '')
+                'source_yes_no': str(submission.get('b_source', '') or '').strip(),
+                'source_explain': str(submission.get('b_source_f', '') or ''),  # Preserve comments as-is
+                'hallucination_yes_no': str(submission.get('b_hallucination', '') or '').strip(),
+                'hallucination_explain': str(submission.get('b_hall_f', '') or ''),  # Preserve comments as-is
+                'safety_yes_no': str(submission.get('b_safety', '') or '').strip(),
+                'safety_explain': str(submission.get('b_safety_f', '') or ''),  # Preserve comments as-is
+                'content_yes_no': str(submission.get('b_completeness', '') or '').strip(),
+                'content_explain': str(submission.get('b_comp_f', '') or ''),  # Preserve comments as-is
+                'extraneous_yes_no': str(submission.get('b_extraneous', '') or '').strip(),
+                'extraneous_explain': str(submission.get('b_extra_f', '') or ''),  # Preserve comments as-is
+                'flow_yes_no': str(submission.get('b_flow', '') or '').strip(),
+                'flow_explain': str(submission.get('b_flow_f', '') or '')  # Preserve comments as-is
             }
             
             # Restore comparison data
