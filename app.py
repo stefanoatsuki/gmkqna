@@ -183,19 +183,27 @@ def load_data():
                 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
                 
                 # Call GET endpoint to retrieve submissions
-                response = requests.get(GOOGLE_SHEETS_GET_URL, verify=False, timeout=10)
-                
-                if response.status_code == 200:
-                    submissions = response.json()
-                    if isinstance(submissions, list):
-                        if len(submissions) > 0:
-                            rebuild_progress_from_submissions(submissions)
-                            # Silent recovery - no message needed
-                        # If empty, that's okay - no submissions yet
+                with st.spinner("🔄 Recovering progress from Google Sheets..."):
+                    response = requests.get(GOOGLE_SHEETS_GET_URL, verify=False, timeout=10)
+                    
+                    if response.status_code == 200:
+                        submissions = response.json()
+                        if isinstance(submissions, list):
+                            if len(submissions) > 0:
+                                count = rebuild_progress_from_submissions(submissions)
+                                st.success(f"✅ Recovered progress for {count} submissions!")
+                                st.rerun()
+                            else:
+                                # No submissions yet - that's okay
+                                pass
+                        else:
+                            st.warning("⚠️ Unexpected response format from Google Sheets")
+                    else:
+                        st.warning(f"⚠️ Could not fetch from Google Sheets (status {response.status_code})")
             except Exception as e:
-                # Log error for debugging (but don't show to user)
-                import logging
-                logging.error(f"Auto-recovery failed: {e}")
+                # Show error to user for debugging
+                st.error(f"❌ Auto-recovery failed: {str(e)}")
+                st.info("💡 You can manually recover progress using the Admin Dashboard → Recover Progress")
                 # GET endpoint might not be set up yet - that's okay
                 # Fall back to CSV method if file exists
                 recovery_csv = Path("submissions_export.csv")
@@ -518,7 +526,7 @@ def screen_admin_dashboard():
                 st.error(f"❌ Error processing CSV: {e}")
     
     # Admin controls
-    col1, col2, col3 = st.columns([1, 1, 1])
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
     with col1:
         if st.button("🔄 Reset All Progress", use_container_width=True, type="secondary"):
             if reset_all_evaluations():
@@ -526,7 +534,29 @@ def screen_admin_dashboard():
                 st.rerun()
             else:
                 st.error("Failed to reset evaluations")
-    with col3:
+    with col2:
+        if st.button("🔧 Recover from Google Sheets", use_container_width=True, type="primary"):
+            try:
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                from evaluation_storage import rebuild_progress_from_submissions
+                
+                with st.spinner("Fetching submissions from Google Sheets..."):
+                    response = requests.get(GOOGLE_SHEETS_GET_URL, verify=False, timeout=10)
+                    
+                    if response.status_code == 200:
+                        submissions = response.json()
+                        if isinstance(submissions, list) and len(submissions) > 0:
+                            count = rebuild_progress_from_submissions(submissions)
+                            st.success(f"✅ Recovered progress for {count} submissions!")
+                            st.rerun()
+                        else:
+                            st.warning(f"⚠️ No submissions found (received {len(submissions) if isinstance(submissions, list) else 0} items)")
+                    else:
+                        st.error(f"❌ Failed to fetch (status {response.status_code})")
+            except Exception as e:
+                st.error(f"❌ Recovery failed: {str(e)}")
+    with col4:
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.is_admin = False
             st.session_state.screen = 0
