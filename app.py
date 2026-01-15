@@ -19,22 +19,36 @@ import sys
 # Disable SSL warnings for sandboxed environments
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Add current directory to path for imports
-sys.path.append(str(Path(__file__).parent))
+# Import local modules
+# Using explicit imports to avoid import cache issues on Streamlit Cloud
+import importlib.util
+from pathlib import Path
 
-from docx_parser import find_model_responses
-from data_loader import (
-    load_evaluation_metadata,
-    load_assignments,
-    save_assignments,
-    create_assignments
-)
-from evaluation_storage import (
-    get_evaluation_status,
-    update_evaluation_status,
-    get_all_evaluator_queries,
-    reset_all_evaluations
-)
+def import_module_from_file(module_name, file_path):
+    """Import a module from a file path."""
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+# Get the directory where app.py is located
+app_dir = Path(__file__).parent
+
+# Import modules
+docx_parser = import_module_from_file("docx_parser", app_dir / "docx_parser.py")
+data_loader = import_module_from_file("data_loader", app_dir / "data_loader.py")
+evaluation_storage = import_module_from_file("evaluation_storage", app_dir / "evaluation_storage.py")
+
+# Extract functions
+find_model_responses = docx_parser.find_model_responses
+load_evaluation_metadata = data_loader.load_evaluation_metadata
+load_assignments = data_loader.load_assignments
+save_assignments = data_loader.save_assignments
+create_assignments = data_loader.create_assignments
+get_evaluation_status = evaluation_storage.get_evaluation_status
+update_evaluation_status = evaluation_storage.update_evaluation_status
+get_all_evaluator_queries = evaluation_storage.get_all_evaluator_queries
+reset_all_evaluations = evaluation_storage.reset_all_evaluations
 
 # Page config
 st.set_page_config(
