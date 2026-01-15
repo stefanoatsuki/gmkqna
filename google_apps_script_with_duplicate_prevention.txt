@@ -1,0 +1,191 @@
+function doPost(e) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('gmk_qa_eval');
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Sheet not found'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    const data = JSON.parse(e.postData.contents);
+    
+    // Check for duplicate: same evaluator + patientId + queryNum
+    const evaluatorCol = 27; // Column AA (Evaluator #)
+    const patientIdCol = 1;   // Column A (Patient ID)
+    const queryCol = 2;       // Column B (Query)
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) { // Skip header row
+      const existingData = sheet.getRange(2, 1, lastRow - 1, 27).getValues();
+      
+      const evaluator = data.evaluator || '';
+      const patientId = String(data.patientId || '');
+      const queryNum = String(data.queryNum || '');
+      
+      // Check if this exact combination already exists
+      for (let i = 0; i < existingData.length; i++) {
+        const rowEvaluator = String(existingData[i][evaluatorCol - 1] || '').trim();
+        const rowPatientId = String(existingData[i][patientIdCol - 1] || '').trim();
+        const rowQueryNum = String(existingData[i][queryCol - 1] || '').trim();
+        
+        if (rowEvaluator === evaluator && 
+            rowPatientId === patientId && 
+            rowQueryNum === queryNum) {
+          // Duplicate found - return success but don't append
+          return ContentService.createTextOutput(JSON.stringify({
+            success: true, 
+            duplicate: true,
+            message: 'Duplicate submission detected - not added'
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+    }
+    
+    // No duplicate found - proceed with normal append
+    const targetRow = sheet.getLastRow() + 1;
+    
+    // Map data to columns (A-G for basic info, J-Z for Model A, AD-AT for Model B, AV-AX for comparison)
+    // Column A: Patient ID
+    sheet.getRange(targetRow, 1).setValue(data.patientId || '');
+    
+    // Column B: Query
+    sheet.getRange(targetRow, 2).setValue(data.queryNum || '');
+    
+    // Column C: Group (hidden field)
+    sheet.getRange(targetRow, 3).setValue(data.group || '');
+    
+    // Column D: Query Type (hidden field)
+    sheet.getRange(targetRow, 4).setValue(data.queryType || '');
+    
+    // Column E: PHI Dependency (hidden field)
+    sheet.getRange(targetRow, 5).setValue(data.phiDependency || '');
+    
+    // Column F: Patient Summary (Ground Truth)
+    sheet.getRange(targetRow, 6).setValue(data.patientSummary || '');
+    
+    // Column G: Query.1 (Full Query)
+    sheet.getRange(targetRow, 7).setValue(data.fullQuery || '');
+    
+    // Model A metrics (Columns J-Z)
+    // Column J: Source Accuracy
+    sheet.getRange(targetRow, 10).setValue(data.a_source || '');
+    sheet.getRange(targetRow, 11).setValue(data.a_source_f || '');
+    
+    // Column L: Hallucination
+    sheet.getRange(targetRow, 12).setValue(data.a_hallucination || '');
+    sheet.getRange(targetRow, 13).setValue(data.a_hall_f || '');
+    
+    // Column N: Safety
+    sheet.getRange(targetRow, 14).setValue(data.a_safety || '');
+    sheet.getRange(targetRow, 15).setValue(data.a_safety_f || '');
+    
+    // Column P: Completeness
+    sheet.getRange(targetRow, 16).setValue(data.a_completeness || '');
+    sheet.getRange(targetRow, 17).setValue(data.a_comp_f || '');
+    
+    // Column R: Extraneous
+    sheet.getRange(targetRow, 18).setValue(data.a_extraneous || '');
+    sheet.getRange(targetRow, 19).setValue(data.a_extra_f || '');
+    
+    // Column T: Flow
+    sheet.getRange(targetRow, 20).setValue(data.a_flow || '');
+    sheet.getRange(targetRow, 21).setValue(data.a_flow_f || '');
+    
+    // Model B metrics (Columns AD-AT, which is columns 30-46)
+    // Column AD (30): Source Accuracy
+    sheet.getRange(targetRow, 30).setValue(data.b_source || '');
+    sheet.getRange(targetRow, 31).setValue(data.b_source_f || '');
+    
+    // Column AF (32): Hallucination
+    sheet.getRange(targetRow, 32).setValue(data.b_hallucination || '');
+    sheet.getRange(targetRow, 33).setValue(data.b_hall_f || '');
+    
+    // Column AH (34): Safety
+    sheet.getRange(targetRow, 34).setValue(data.b_safety || '');
+    sheet.getRange(targetRow, 35).setValue(data.b_safety_f || '');
+    
+    // Column AJ (36): Completeness
+    sheet.getRange(targetRow, 36).setValue(data.b_completeness || '');
+    sheet.getRange(targetRow, 37).setValue(data.b_comp_f || '');
+    
+    // Column AL (38): Extraneous
+    sheet.getRange(targetRow, 38).setValue(data.b_extraneous || '');
+    sheet.getRange(targetRow, 39).setValue(data.b_extra_f || '');
+    
+    // Column AN (40): Flow
+    sheet.getRange(targetRow, 40).setValue(data.b_flow || '');
+    sheet.getRange(targetRow, 41).setValue(data.b_flow_f || '');
+    
+    // Comparison (Columns AV-AX, which is columns 48-50)
+    // Column AV (48): Model Preference
+    sheet.getRange(targetRow, 48).setValue(data.preference || '');
+    
+    // Column AW (49): Preference Reasons
+    sheet.getRange(targetRow, 49).setValue(data.pref_reasons || '');
+    
+    // Column AX (50): Evaluator #
+    sheet.getRange(targetRow, 50).setValue(data.evaluator || '');
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      duplicate: false,
+      row: targetRow
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: error.toString()
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('gmk_qa_eval');
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({error: 'Sheet not found'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return ContentService.createTextOutput(JSON.stringify([]))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Read columns: A (Patient ID), B (Query), AX (Evaluator #), AV (Model Preference)
+    const patientIdCol = 1;   // Column A
+    const queryCol = 2;       // Column B
+    const evaluatorCol = 50;  // Column AX
+    const preferenceCol = 48; // Column AV
+    
+    const data = sheet.getRange(2, 1, lastRow - 1, 50).getValues();
+    const submissions = [];
+    
+    for (let i = 0; i < data.length; i++) {
+      const preference = String(data[i][preferenceCol - 1] || '').trim();
+      
+      // Only include rows where Model Preference is filled (completed submissions)
+      if (preference) {
+        submissions.push({
+          patientId: String(data[i][patientIdCol - 1] || '').trim(),
+          queryNum: String(data[i][queryCol - 1] || '').trim(),
+          evaluator: String(data[i][evaluatorCol - 1] || '').trim()
+        });
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(submissions))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      error: error.toString()
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+

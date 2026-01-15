@@ -278,6 +278,14 @@ def submit_to_google_sheets(form_data: Dict) -> bool:
         )
         
         if response.status_code == 200:
+            # Check if response indicates a duplicate
+            try:
+                response_data = response.json()
+                if response_data.get('duplicate'):
+                    # Duplicate detected - this is okay, just log it
+                    return True  # Return True since we don't want to show error for duplicates
+            except:
+                pass  # If response isn't JSON or doesn't have duplicate flag, assume success
             return True
         else:
             st.error(f"Submission failed: {response.status_code} - {response.text}")
@@ -1236,6 +1244,35 @@ def screen5_comparison():
     
     with btn_submit:
         if st.button("Submit & Next Query", type="primary", key="bottom_submit"):
+            # Check if already completed to prevent duplicate submissions
+            eval_status = get_evaluation_status(st.session_state.evaluator, patient_id, query_num)
+            if eval_status.get('comparison_done'):
+                st.warning("⚠️ This query has already been submitted. Skipping duplicate submission.")
+                # Still navigate to next query
+                assignments = st.session_state.assignments[st.session_state.evaluator]
+                queries_with_status = get_all_evaluator_queries(st.session_state.evaluator, assignments)
+                current_idx = None
+                for idx, q in enumerate(queries_with_status):
+                    if q['patient_id'] == patient_id and q['query_num'] == query_num:
+                        current_idx = idx
+                        break
+                
+                if current_idx is not None and current_idx + 1 < len(queries_with_status):
+                    next_query = queries_with_status[current_idx + 1]
+                    st.session_state.selected_query = next_query
+                    next_status = next_query['status']
+                    if not next_status.get('model_a_graded'):
+                        st.session_state.screen = 3
+                    elif not next_status.get('model_b_graded'):
+                        st.session_state.screen = 4
+                    else:
+                        st.session_state.screen = 5
+                    st.rerun()
+                else:
+                    st.session_state.screen = 2  # Go back to query list if no more queries
+                    st.rerun()
+                return
+            
             if not preference_reasons.strip():
                 st.session_state.pref_error = True
                 st.rerun()
