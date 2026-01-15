@@ -319,6 +319,13 @@ def screen_admin_dashboard():
     </div>
     """, unsafe_allow_html=True)
     
+    # Important notice about progress tracking
+    st.info("""
+    ⚠️ **Note:** Progress tracking is stored locally and may reset when the app restarts. 
+    **All evaluation data is safely stored in Google Sheets** - only the progress indicators 
+    (started/completed status) are affected. Evaluators can continue where they left off.
+    """)
+    
     # Admin controls
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:

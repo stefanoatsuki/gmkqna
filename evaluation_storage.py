@@ -102,3 +102,47 @@ def get_all_evaluator_queries(evaluator: str, assignments: list) -> list:
     
     return queries_with_status
 
+
+def rebuild_progress_from_submissions(submitted_data: list):
+    """
+    Rebuild evaluation progress from submitted data (e.g., from Google Sheets export).
+    
+    Args:
+        submitted_data: List of dicts with keys: evaluator, patientId, queryNum
+                        (matching what was submitted to Google Sheets)
+    
+    This marks queries as completed if they were submitted to Google Sheets.
+    Useful for recovering progress after Streamlit Cloud file system reset.
+    """
+    evaluations = load_evaluations()
+    
+    for submission in submitted_data:
+        evaluator = submission.get('evaluator', '')
+        patient_id = submission.get('patientId', '')
+        query_num = str(submission.get('queryNum', ''))
+        
+        if evaluator and patient_id and query_num:
+            key = f"{evaluator}_{patient_id}_{query_num}"
+            
+            if key not in evaluations:
+                evaluations[key] = {
+                    'started': True,
+                    'model_a_graded': True,
+                    'model_b_graded': True,
+                    'comparison_done': True,
+                    'model_a_data': {},
+                    'model_b_data': {},
+                    'comparison_data': {}
+                }
+            else:
+                # Update to mark as completed
+                evaluations[key].update({
+                    'started': True,
+                    'model_a_graded': True,
+                    'model_b_graded': True,
+                    'comparison_done': True
+                })
+    
+    save_evaluations(evaluations)
+    return len(submitted_data)
+
