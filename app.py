@@ -178,10 +178,15 @@ def load_data():
                 
                 if response.status_code == 200:
                     submissions = response.json()
-                    if isinstance(submissions, list) and len(submissions) > 0:
-                        rebuild_progress_from_submissions(submissions)
-                        # Silent recovery - no message needed
+                    if isinstance(submissions, list):
+                        if len(submissions) > 0:
+                            rebuild_progress_from_submissions(submissions)
+                            # Silent recovery - no message needed
+                        # If empty, that's okay - no submissions yet
             except Exception as e:
+                # Log error for debugging (but don't show to user)
+                import logging
+                logging.error(f"Auto-recovery failed: {e}")
                 # GET endpoint might not be set up yet - that's okay
                 # Fall back to CSV method if file exists
                 recovery_csv = Path("submissions_export.csv")
@@ -485,7 +490,21 @@ def screen_admin_dashboard():
                     st.success(f"✅ Recovered progress for {count} submissions! The app will refresh...")
                     st.rerun()
                 else:
-                    st.error("❌ No valid submissions found. Please check your CSV format.")
+                    # Show debugging info
+                    st.error("❌ No valid submissions found.")
+                    st.info(f"""
+                    **Debug Info:**
+                    - Patient ID column: `{patient_col}` (found: {patient_col is not None})
+                    - Query column: `{query_col}` (found: {query_col is not None})
+                    - Evaluator column: `{evaluator_col}` (found: {evaluator_col is not None})
+                    - Total rows in CSV: {len(df)}
+                    - CSV columns: {list(df.columns[:10])}...
+                    
+                    **Please check:**
+                    1. Does your CSV have an "Evaluator #" or "Evaluator" column?
+                    2. Are there rows with Model Preference filled in?
+                    3. Try checking column 50 (AX) for evaluator data
+                    """)
             except Exception as e:
                 st.error(f"❌ Error processing CSV: {e}")
     

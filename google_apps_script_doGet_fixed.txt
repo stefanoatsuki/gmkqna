@@ -1,0 +1,56 @@
+// IMPROVED doGet() function - uses column indices directly (more reliable)
+// Replace your existing doGet() function with this:
+
+function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("gmk_qa_eval");
+    if (!sheet) sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    var data = sheet.getDataRange().getValues();
+    
+    // Use column indices directly (0-indexed):
+    // Column A (index 0): Patient ID
+    // Column B (index 1): Query
+    // Column AV (index 47): Model Preference
+    // Column AX (index 49): Evaluator # (actually column 50 in 1-indexed, so index 49 in 0-indexed)
+    
+    var patientCol = 0;      // Column A
+    var queryCol = 1;        // Column B
+    var prefCol = 47;         // Column AV (Model Preference)
+    var evaluatorCol = 49;    // Column AX (Evaluator #) - actually 50 in Excel, but 49 in 0-indexed array
+    
+    var submissions = [];
+    
+    // Skip header row (index 0), process all rows
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var patientId = row[patientCol];
+      var queryNum = row[queryCol];
+      var evaluator = row[evaluatorCol];
+      var preference = row[prefCol];
+      
+      // Only include rows with completed evaluations
+      // Check if preference exists and is not empty
+      if (patientId && queryNum && evaluator && preference && 
+          String(preference).trim() !== '' && 
+          String(preference).trim() !== 'PREF_MISSING') {
+        submissions.push({
+          patientId: String(patientId).trim(),
+          queryNum: String(queryNum).trim(),
+          evaluator: String(evaluator).trim()
+        });
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(submissions))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      error: error.toString(),
+      message: "Error in doGet function"
+    }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
