@@ -190,7 +190,7 @@ def load_data():
                         submissions = response.json()
                         if isinstance(submissions, list):
                             if len(submissions) > 0:
-                                count = rebuild_progress_from_submissions(submissions)
+                                count, _ = rebuild_progress_from_submissions(submissions)
                                 st.success(f"✅ Recovered progress for {count} submissions!")
                                 st.rerun()
                             else:
@@ -547,8 +547,15 @@ def screen_admin_dashboard():
                     if response.status_code == 200:
                         submissions = response.json()
                         if isinstance(submissions, list) and len(submissions) > 0:
-                            count = rebuild_progress_from_submissions(submissions)
+                            # Debug: show sample data
+                            st.info(f"📥 Received {len(submissions)} submissions from Google Sheets")
+                            if len(submissions) > 0:
+                                st.json(submissions[0])  # Show first submission as example
+                            
+                            count, sample_keys = rebuild_progress_from_submissions(submissions)
                             st.success(f"✅ Recovered progress for {count} submissions!")
+                            if sample_keys:
+                                st.info(f"📝 Sample keys created: {', '.join(sample_keys[:3])}")
                             st.rerun()
                         else:
                             st.warning(f"⚠️ No submissions found (received {len(submissions) if isinstance(submissions, list) else 0} items)")

@@ -115,14 +115,27 @@ def rebuild_progress_from_submissions(submitted_data: list):
     Useful for recovering progress after Streamlit Cloud file system reset.
     """
     evaluations = load_evaluations()
+    created_keys = []
     
     for submission in submitted_data:
-        evaluator = submission.get('evaluator', '')
-        patient_id = submission.get('patientId', '')
-        query_num = str(submission.get('queryNum', ''))
+        evaluator = submission.get('evaluator', '').strip()
+        patient_id = str(submission.get('patientId', '')).strip()
+        query_num_raw = submission.get('queryNum', '')
+        
+        # Normalize query number to match assignment format (e.g., "1" -> "1.0")
+        try:
+            # Convert to float then back to string with .0 if whole number
+            qnum_float = float(query_num_raw)
+            if qnum_float == int(qnum_float):
+                query_num = f"{int(qnum_float)}.0"
+            else:
+                query_num = str(qnum_float)
+        except (ValueError, TypeError):
+            query_num = str(query_num_raw)
         
         if evaluator and patient_id and query_num:
             key = f"{evaluator}_{patient_id}_{query_num}"
+            created_keys.append(key)
             
             if key not in evaluations:
                 evaluations[key] = {
@@ -144,5 +157,5 @@ def rebuild_progress_from_submissions(submitted_data: list):
                 })
     
     save_evaluations(evaluations)
-    return len(submitted_data)
+    return len(submitted_data), created_keys[:5]  # Return count and sample keys
 
