@@ -734,21 +734,10 @@ def screen2_review():
                 else:
                     st.success("Adjudication saved locally. (Sheets sync will retry later.)")
 
-                progress = load_progress()
-                group_queries = get_group_disagreements(st.session_state.group)
-                next_query = None
-                for q in group_queries:
-                    if not progress.get(q['query_key'], {}).get('completed', False):
-                        if q['query_key'] != query_key:
-                            next_query = q
-                            break
-
-                if next_query:
-                    st.session_state.selected_query_key = next_query['query_key']
-                    st.rerun()
-                else:
-                    st.session_state.screen = 1
-                    st.rerun()
+                import time
+                time.sleep(1.5)
+                st.session_state.screen = 1
+                st.rerun()
 
     with submit_col2:
         if st.button("Back to Queue", key="back_btn"):
