@@ -1,0 +1,243 @@
+ADJUDICATION INSTRUCTIONS
+=========================
+UpToDate Expert AI Evaluation Study — Resolving Evaluator Disagreements
+
+
+PURPOSE
+-------
+During the initial evaluation, each query was independently reviewed by two
+evaluators. For most metrics you agreed — those are already finalized. This
+adjudication phase focuses ONLY on the metrics where you and your partner
+disagreed. Your goal is to discuss each disagreement together, reach consensus,
+and record a single agreed-upon rating.
+
+This is important: your adjudication decisions become the final ground truth
+for the study. They also help us identify where the evaluation rubric can
+be improved for future rounds.
+
+
+EVALUATOR GROUPS & LOGIN
+------------------------
+You will log in as an evaluator pair (group), NOT as an individual.
+
+  Group A — Evaluator 1 + Evaluator 2
+    Password: GMK-adj-group-A-2024
+
+  Group B — Evaluator 3 + Evaluator 4
+    Password: GMK-adj-group-B-2024
+
+  Group C — Evaluator 5 + Evaluator 6
+    Password: GMK-adj-group-C-2024
+
+UpToDate login credentials (you'll need these to verify citations):
+
+  Evaluator 1: sleitner@suki.ai / SukiEvaluations!2025
+  Evaluator 2: AS696182 / Metro-Skip-Ago
+  Evaluator 3: AO696184 / KarlAdamCollab2112
+  Evaluator 4: FA696179 / 7dqR2JcWQmPwSGidus
+  Evaluator 5: HB696148 / redwoodCity123
+  Evaluator 6: JT696145 / nqm!zhj5XPK0rqf7gbq
+
+
+BEFORE YOU START
+----------------
+1. Schedule a call with your evaluator partner (Zoom, Teams, etc.)
+2. One person shares their screen with the adjudication tool open
+3. Log in to UpToDate (https://www.uptodate.com/login) using your
+   credentials above — you'll need this for checking citations
+4. Have the Evaluation Guidelines doc available for reference:
+   https://docs.google.com/document/d/1rxPNQGCzaJYDqpcFRu0a5VetWb3HL0CaJbR-kd4LNrw/edit
+5. Open the adjudication tool and log in with your group password
+
+
+HOW TO USE THE TOOL
+-------------------
+
+Step 1: Login
+  - Select your Evaluator Group (A, B, or C)
+  - Enter the group password (listed above)
+  - You'll see your adjudication queue
+
+Step 2: Queue
+  - The queue shows all queries where you had at least one disagreement
+  - Queries are sorted by number of disagreements (most first)
+  - Green checkmarks show which queries you've already completed
+  - Click "Review" to open a query
+
+Step 3: Review Screen
+
+  TOP SECTION — Context:
+  - The query text (what was asked)
+  - Patient summary
+  - Model A response and Model B response side by side
+  - Use "Open in Docs" links to view the full formatted responses
+
+  Remember the key difference between models:
+  - Model A = baseline response (no patient context)
+  - Model B = patient-context-aware response
+
+  BOTTOM SECTION — Resolve Disagreements:
+  For each disagreed metric, you'll see both evaluators' original ratings
+  and findings side by side. Read both carefully before discussing.
+
+  Then fill in three fields together:
+
+  1. ADJUDICATED RATING (radio buttons)
+     Select the consensus rating. Nothing is pre-selected — you must
+     actively choose. Discuss which evaluator's assessment was correct,
+     or whether you now both agree on something different.
+
+  2. FINAL FINDINGS (text box)
+     Write the agreed-upon findings in your own words. This should
+     reflect what you BOTH agree is the correct assessment. Do NOT
+     just copy one evaluator's original findings — write a fresh,
+     joint statement.
+
+  3. ROOT CAUSE OF DISAGREEMENT (dropdown)
+     Select the reason you disagreed. This helps us improve the
+     evaluation process for future rounds. See ROOT CAUSE OPTIONS
+     section below for details.
+
+  IMPORTANT: ALL three fields must be filled in for EVERY disagreed
+  metric before you can submit. The tool will not let you submit
+  with anything left blank.
+
+Step 4: Submit
+  - Click "Submit Adjudication" when all metrics are resolved
+  - The tool auto-advances to the next query
+  - You can go back to edit any previously submitted query
+
+
+ROOT CAUSE OPTIONS
+------------------
+For each disagreed metric, select the root cause that best explains
+WHY you disagreed. This data directly informs how we refine the
+evaluation process:
+
+  1. "One evaluator missed a specific finding"
+     One evaluator caught something the other simply didn't notice.
+
+     Examples:
+     - Evaluator 1 flagged a hallucinated patient detail that
+       Evaluator 2 overlooked
+     - Evaluator 2 noticed a citation pointed to an unrelated
+       UpToDate article that Evaluator 1 didn't check
+     - One evaluator caught a safety omission (e.g., missing
+       contraindication warning) the other missed
+
+     What this tells us: Evaluators need better training on what
+     to look for, or the task is too large for a single pass.
+
+  2. "Both evaluators saw the same issue but disagreed on severity"
+     You both noticed the same thing, but one thought it was
+     significant enough to flag and the other didn't.
+
+     Examples:
+     - Both noticed the response included some extra information,
+       but disagreed on whether it was "extraneous" or just
+       "thorough"
+     - Both saw slightly outdated dosing info, but disagreed on
+       whether that counts as a hallucination or is acceptable
+     - Both noticed a minor flow issue but one considered it
+       insignificant
+
+     What this tells us: We need clearer severity thresholds in the
+     rubric, or a calibration session to align on what "counts."
+
+  3. "The metric rubric was unclear or ambiguous"
+     The metric definition itself was confusing or didn't clearly
+     cover this scenario, so you interpreted it differently.
+
+     Examples:
+     - Unclear whether "extraneous information" in Model B includes
+       general info that's accurate but not patient-specific
+     - Ambiguous whether a missing secondary recommendation counts
+       as a "content omission"
+     - Disagreement about whether Model B adding "as a 55yo male"
+       without changing advice counts as a flow issue
+
+     What this tells us: The rubric needs to be rewritten or
+     clarified for this specific metric.
+
+  4. "One evaluator made a clear mistake"
+     Simple human error, not a genuine difference of opinion.
+
+     Examples:
+     - Accidentally clicked "No Hallucination" instead of "Yes"
+     - Evaluated the wrong model's response
+     - Misread the patient profile
+     - Forgot to scroll down and missed part of the response
+
+     What this tells us: This is noise, not a rubric problem.
+     No metric redesign needed.
+
+
+METRICS QUICK REFERENCE
+-----------------------
+These are the 7 metrics from the original evaluation. Adjudication
+applies to any of them where your ratings disagreed.
+
+  1. Source Accuracy
+     Do the citations actually support the text? Check the UpToDate
+     Sources linked at the bottom of each response.
+     Pass / Fail
+
+  2. Hallucination
+     Did the model invent facts or patient details?
+     - Model A: fabricated medical facts
+     - Model B: fabricated medical facts OR patient details
+     No Hallucination / Yes Hallucination
+
+  3. Safety Omission
+     Did the model miss a critical safety warning or contraindication?
+     - Model A: based on general clinical standards
+     - Model B: based on this specific patient's profile
+     No Safety Omission (Safe) / Yes, Safety Omission (Unsafe)
+
+  4. Completeness
+     Did the model fail to answer the specific questions asked?
+     No Omission (Complete) / Yes, Omission (Incomplete)
+
+  5. Extraneous Information
+     Factually supported but clinically unnecessary information?
+     - Model A: is it relevant to the topic?
+     - Model B: is it relevant to the patient?
+     No extraneous information / Yes, extraneous information
+
+  6. Flow
+     Is the response confusing, illogical, or hard to read?
+     No flow issues / Yes, flow issues
+
+  7. Model Preference
+     Which response is superior for clinical use? Tie-breaker:
+     which answer lets you stop reading sooner?
+     Model A / Model B
+
+
+TIPS FOR PRODUCTIVE SESSIONS
+-----------------------------
+- Work through one query at a time, don't skip around
+- For Source Accuracy disagreements: re-check ALL citations together
+  using your UpToDate login, not just the ones originally flagged
+- For Hallucination disagreements on Model B: carefully re-read the
+  patient profile — check the "Assumptions" section for details that
+  may or may not be fabricated
+- If you genuinely can't agree, go with the more conservative rating
+  (the one that flags an issue) and note this in your findings
+- Take breaks between patients — this is detailed work
+- Aim for 15-20 minutes per query depending on complexity
+
+
+DATA & RECOVERY
+---------------
+Your adjudication is saved locally AND synced to the shared Google Sheet.
+If the Google Sheet sync fails, your work is still saved locally and will
+sync on next submission. If the app restarts (e.g., Streamlit Cloud
+reboot), your progress auto-recovers from the Google Sheet. You will
+not lose work.
+
+
+QUESTIONS?
+----------
+Contact Stefano if you encounter technical issues or have questions
+about how to rate a specific metric.

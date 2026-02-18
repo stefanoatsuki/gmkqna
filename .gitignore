@@ -22,8 +22,9 @@ Thumbs.db
 # Streamlit
 .streamlit/secrets.toml
 
-# Local storage (will be recreated)
+# Local storage (will be recreated from Google Sheets)
 evaluations.json
+adjudication/adjudication_data/adjudication_progress.json
 
 # Uptodate folder (test scripts)
 Uptodate/

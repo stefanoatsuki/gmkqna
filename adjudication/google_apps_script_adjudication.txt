@@ -1,0 +1,318 @@
+/**
+ * Google Apps Script — Combined Evaluation + Adjudication
+ *
+ * REPLACES your existing doPost/doGet in the Apps Script editor.
+ * Routes requests by _type field: 'adjudication' goes to adjudication tab,
+ * everything else goes to the existing gmk_qa_eval tab.
+ *
+ * SETUP INSTRUCTIONS:
+ * 1. Open your Google Sheet → Extensions → Apps Script
+ * 2. Select ALL existing code and REPLACE with this entire file
+ * 3. The script will auto-create an "adjudication" tab on first POST
+ * 4. Deploy → Manage deployments → Edit (pencil icon) → Version: "New version" → Deploy
+ *    (This updates your existing deployment URL — no need to change the URL in the app)
+ *
+ * IMPORTANT: Use "Manage deployments" > Edit, NOT "New deployment".
+ *            This keeps the same URL so the app doesn't need updating.
+ */
+
+// ===== COMBINED doPost — routes by _type =====
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+
+    // Route: adjudication submissions go to separate tab
+    if (data._type === 'adjudication') {
+      return handleAdjudicationPost(data);
+    }
+
+    // Default: evaluation data (original behavior)
+    return handleEvaluationPost(data);
+  } catch (error) {
+    return ContentService.createTextOutput("Error: " + error.toString())
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+// ===== COMBINED doGet — routes by ?type= parameter =====
+function doGet(e) {
+  try {
+    var type = (e && e.parameter && e.parameter.type) || 'evaluation';
+
+    if (type === 'adjudication') {
+      return handleAdjudicationGet();
+    }
+
+    // Default: evaluation data (original behavior)
+    return handleEvaluationGet();
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      error: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+
+// =========================================================================
+//  ADJUDICATION HANDLERS (new)
+// =========================================================================
+
+function handleAdjudicationPost(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('adjudication');
+
+  // Auto-create the adjudication tab with headers if it doesn't exist
+  if (!sheet) {
+    sheet = ss.insertSheet('adjudication');
+    sheet.getRange(1, 1, 1, 14).setValues([[
+      'Query Key', 'Patient ID', 'Query Num', 'Group', 'Query Type',
+      'Evaluator', 'Timestamp', 'Metric', 'Metric Key',
+      'Eval 1 Rating', 'Eval 2 Rating', 'Adjudicated Rating',
+      'Final Findings', 'Root Cause'
+    ]]);
+    // Bold + freeze header row
+    sheet.getRange(1, 1, 1, 14).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+
+  var queryKey = data.query_key || '';
+  var evaluator = data.evaluator || '';
+  var timestamp = data.timestamp || new Date().toISOString();
+  var metrics = data.metrics || [];  // Array of {metric, eval1_rating, eval2_rating, rating, findings, root_cause}
+
+  // Delete any existing rows for this query_key (re-submission replaces all)
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    var existingKeys = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    var rowsToDelete = [];
+    for (var i = existingKeys.length - 1; i >= 0; i--) {
+      if (String(existingKeys[i][0]).trim() === queryKey) {
+        rowsToDelete.push(i + 2);
+      }
+    }
+    // Delete from bottom to top so row indices don't shift
+    for (var j = 0; j < rowsToDelete.length; j++) {
+      sheet.deleteRow(rowsToDelete[j]);
+    }
+  }
+
+  // Write one row per disagreed metric
+  var firstRow = sheet.getLastRow() + 1;
+  for (var m = 0; m < metrics.length; m++) {
+    var metric = metrics[m];
+    var row = firstRow + m;
+    sheet.getRange(row, 1).setValue(queryKey);
+    sheet.getRange(row, 2).setValue(data.patient_id || '');
+    sheet.getRange(row, 3).setValue(data.query_num || '');
+    sheet.getRange(row, 4).setValue(data.group || '');
+    sheet.getRange(row, 5).setValue(data.query_type || '');
+    sheet.getRange(row, 6).setValue(evaluator);
+    sheet.getRange(row, 7).setValue(timestamp);
+    sheet.getRange(row, 8).setValue(metric.metric || '');
+    sheet.getRange(row, 9).setValue(metric.metric_key || '');
+    sheet.getRange(row, 10).setValue(metric.eval1_rating || '');
+    sheet.getRange(row, 11).setValue(metric.eval2_rating || '');
+    sheet.getRange(row, 12).setValue(metric.rating || '');
+    sheet.getRange(row, 13).setValue(metric.findings || '');
+    sheet.getRange(row, 14).setValue(metric.root_cause || '');
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({
+    success: true, rows_written: metrics.length, first_row: firstRow
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function handleAdjudicationGet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('adjudication');
+
+  if (!sheet) {
+    return ContentService.createTextOutput(JSON.stringify([]))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    return ContentService.createTextOutput(JSON.stringify([]))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var data = sheet.getRange(2, 1, lastRow - 1, 14).getValues();
+
+  // Group rows by query_key to reconstruct adjudication_data per query
+  var queryMap = {};
+  for (var i = 0; i < data.length; i++) {
+    var queryKey = String(data[i][0] || '').trim();
+    if (!queryKey) continue;
+
+    if (!queryMap[queryKey]) {
+      queryMap[queryKey] = {
+        query_key: queryKey,
+        patient_id: String(data[i][1] || '').trim(),
+        query_num: String(data[i][2] || '').trim(),
+        group: String(data[i][3] || '').trim(),
+        query_type: String(data[i][4] || '').trim(),
+        evaluator: String(data[i][5] || '').trim(),
+        timestamp: String(data[i][6] || '').trim(),
+        adjudication_data: {}
+      };
+    }
+
+    // Use metric_key (col 9) for the data dict key, fall back to display name (col 8)
+    var metricKey = String(data[i][8] || data[i][7] || '').trim();
+    if (metricKey) {
+      queryMap[queryKey].adjudication_data[metricKey] = {
+        rating: String(data[i][11] || '').trim(),
+        findings: String(data[i][12] || ''),
+        root_cause: String(data[i][13] || '').trim(),
+        root_cause_detail: ''
+      };
+    }
+  }
+
+  var submissions = [];
+  for (var key in queryMap) {
+    queryMap[key].n_disagreements = Object.keys(queryMap[key].adjudication_data).length;
+    submissions.push(queryMap[key]);
+  }
+
+  return ContentService.createTextOutput(JSON.stringify(submissions))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// =========================================================================
+//  EVALUATION HANDLERS (your existing logic, exact same column mapping)
+// =========================================================================
+
+function handleEvaluationPost(data) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("gmk_qa_eval");
+  if (!sheet) sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+  var lastRow = sheet.getLastRow();
+  var targetRow = lastRow + 1;
+
+  // Make sure sheet has enough columns (at least 50)
+  var lastCol = sheet.getLastColumn();
+  if (lastCol < 50) {
+    sheet.insertColumnsAfter(lastCol, 50 - lastCol);
+  }
+
+  // A-G: Basic info
+  sheet.getRange(targetRow, 1).setValue(data.patientId || "");
+  sheet.getRange(targetRow, 2).setValue(data.queryNum || "");
+  sheet.getRange(targetRow, 3).setValue(data.group || "");
+  sheet.getRange(targetRow, 4).setValue(data.queryType || "");
+  sheet.getRange(targetRow, 5).setValue(data.phiDependency || "");
+  sheet.getRange(targetRow, 6).setValue(data.patientSummary || "");
+  sheet.getRange(targetRow, 7).setValue(data.fullQuery || "");
+
+  // MODEL A (exact same columns as your original script)
+  sheet.getRange(targetRow, 10).setValue(data.a_source || "");
+  sheet.getRange(targetRow, 11).setValue(data.a_source_f || "");
+  sheet.getRange(targetRow, 13).setValue(data.a_hallucination || "");
+  sheet.getRange(targetRow, 14).setValue(data.a_hall_f || "");
+  sheet.getRange(targetRow, 16).setValue(data.a_safety || "");
+  sheet.getRange(targetRow, 17).setValue(data.a_safety_f || "");
+  sheet.getRange(targetRow, 19).setValue(data.a_completeness || "");
+  sheet.getRange(targetRow, 20).setValue(data.a_comp_f || "");
+  sheet.getRange(targetRow, 22).setValue(data.a_extraneous || "");
+  sheet.getRange(targetRow, 23).setValue(data.a_extra_f || "");
+  sheet.getRange(targetRow, 25).setValue(data.a_flow || "");
+  sheet.getRange(targetRow, 26).setValue(data.a_flow_f || "");
+
+  // MODEL B (exact same columns as your original script)
+  sheet.getRange(targetRow, 30).setValue(data.b_source || "");
+  sheet.getRange(targetRow, 31).setValue(data.b_source_f || "");
+  sheet.getRange(targetRow, 33).setValue(data.b_hallucination || "");
+  sheet.getRange(targetRow, 34).setValue(data.b_hall_f || "");
+  sheet.getRange(targetRow, 36).setValue(data.b_safety || "");
+  sheet.getRange(targetRow, 37).setValue(data.b_safety_f || "");
+  sheet.getRange(targetRow, 39).setValue(data.b_completeness || "");
+  sheet.getRange(targetRow, 40).setValue(data.b_comp_f || "");
+  sheet.getRange(targetRow, 42).setValue(data.b_extraneous || "");
+  sheet.getRange(targetRow, 43).setValue(data.b_extra_f || "");
+  sheet.getRange(targetRow, 45).setValue(data.b_flow || "");
+  sheet.getRange(targetRow, 46).setValue(data.b_flow_f || "");
+
+  // COMPARE - columns 48, 49, 50
+  sheet.getRange(targetRow, 48).setValue(data.preference || "");
+  sheet.getRange(targetRow, 49).setValue(data.pref_reasons || "");
+  sheet.getRange(targetRow, 50).setValue(data.evaluator || "");
+
+  return ContentService.createTextOutput("Success - wrote to row " + targetRow)
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+function handleEvaluationGet() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('gmk_qa_eval');
+  if (!sheet) {
+    return ContentService.createTextOutput(JSON.stringify({error: 'Sheet not found'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    return ContentService.createTextOutput(JSON.stringify([]))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Read ALL columns with evaluation data
+  var data = sheet.getRange(2, 1, lastRow - 1, 50).getValues();
+  var submissions = [];
+
+  for (var i = 0; i < data.length; i++) {
+    var preference = String(data[i][47] || '').trim(); // Column 48 = index 47
+
+    var hasModelAData = String(data[i][9] || '').trim() || String(data[i][11] || '').trim() ||
+      String(data[i][13] || '').trim() || String(data[i][15] || '').trim() ||
+      String(data[i][17] || '').trim() || String(data[i][19] || '').trim() ||
+      String(data[i][10] || '').trim() || String(data[i][12] || '').trim() ||
+      String(data[i][14] || '').trim() || String(data[i][16] || '').trim() ||
+      String(data[i][18] || '').trim() || String(data[i][20] || '').trim();
+
+    var hasModelBData = String(data[i][29] || '').trim() || String(data[i][31] || '').trim() ||
+      String(data[i][33] || '').trim() || String(data[i][35] || '').trim() ||
+      String(data[i][37] || '').trim() || String(data[i][39] || '').trim() ||
+      String(data[i][30] || '').trim() || String(data[i][32] || '').trim() ||
+      String(data[i][34] || '').trim() || String(data[i][36] || '').trim() ||
+      String(data[i][38] || '').trim() || String(data[i][40] || '').trim();
+
+    if (preference || hasModelAData || hasModelBData) {
+      submissions.push({
+        patientId: String(data[i][0] || '').trim(),
+        queryNum: String(data[i][1] || '').trim(),
+        evaluator: String(data[i][49] || '').trim(),
+        a_source: String(data[i][9] || '').trim(),
+        a_source_f: String(data[i][10] || ''),
+        a_hallucination: String(data[i][11] || '').trim(),
+        a_hall_f: String(data[i][12] || ''),
+        a_safety: String(data[i][13] || '').trim(),
+        a_safety_f: String(data[i][14] || ''),
+        a_completeness: String(data[i][15] || '').trim(),
+        a_comp_f: String(data[i][16] || ''),
+        a_extraneous: String(data[i][17] || '').trim(),
+        a_extra_f: String(data[i][18] || ''),
+        a_flow: String(data[i][19] || '').trim(),
+        a_flow_f: String(data[i][20] || ''),
+        b_source: String(data[i][29] || '').trim(),
+        b_source_f: String(data[i][30] || ''),
+        b_hallucination: String(data[i][31] || '').trim(),
+        b_hall_f: String(data[i][32] || ''),
+        b_safety: String(data[i][33] || '').trim(),
+        b_safety_f: String(data[i][34] || ''),
+        b_completeness: String(data[i][35] || '').trim(),
+        b_comp_f: String(data[i][36] || ''),
+        b_extraneous: String(data[i][37] || '').trim(),
+        b_extra_f: String(data[i][38] || ''),
+        b_flow: String(data[i][39] || '').trim(),
+        b_flow_f: String(data[i][40] || ''),
+        preference: preference,
+        pref_reasons: String(data[i][48] || '')
+      });
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify(submissions))
+    .setMimeType(ContentService.MimeType.JSON);
+}
