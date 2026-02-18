@@ -111,7 +111,7 @@ PREFERENCE_OPTIONS = ["Model A", "Model B"]
 
 # Google Sheets integration — same Apps Script URL, routes by _type field
 # IMPORTANT: After deploying the updated Apps Script, replace this URL with the new deployment URL
-GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzIHcDgjRg91-UPWcmQPGrH_bsieiyqlV2R59KFmJnedhg0QEeZIuZTltaQ3-GZSS_j4g/exec"
+GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxSL5SX2kBaXy1ZDP8lxfrKqNApULKkX9QiDaUwL14oWGSSOOCzeCj4nIvCbzoOYSnIXA/exec"
 
 
 def submit_adjudication_to_sheets(query_key: str, query: Dict,
